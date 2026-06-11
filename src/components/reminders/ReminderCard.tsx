@@ -1,6 +1,9 @@
 import type { Reminder } from "../../types";
 
-type Props = { reminder: Reminder };
+type Props = {
+  reminder: Reminder;
+  onMarkDone?: () => void;
+};
 
 const categoryEmoji: Record<string, string> = {
   Health: "🏥",
@@ -22,7 +25,7 @@ const statusLabel: Record<Reminder["status"], string> = {
   overdue: "Overdue ⚠️",
 };
 
-export default function ReminderCard({ reminder }: Props) {
+export default function ReminderCard({ reminder, onMarkDone }: Props) {
   return (
     <div className={`card border ${statusStyle[reminder.status]}`}>
       <div className="flex items-start justify-between gap-2">
@@ -51,6 +54,15 @@ export default function ReminderCard({ reminder }: Props) {
         <p className="mt-2 text-xs text-gray-400 border-t border-current border-opacity-10 pt-2">
           {reminder.notes}
         </p>
+      )}
+
+      {reminder.status !== "done" && onMarkDone && (
+        <button
+          onClick={onMarkDone}
+          className="mt-3 text-xs text-green-600 hover:text-green-700 font-semibold flex items-center gap-1 transition-colors"
+        >
+          ✓ Mark as done
+        </button>
       )}
     </div>
   );
