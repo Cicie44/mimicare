@@ -1,0 +1,53 @@
+export type Pet = {
+  id: string;
+  name: string;
+  species: string;
+  breed?: string;
+  gender: string;
+  birthday?: string;
+  ageLabel: string;
+  neutered: boolean;
+  indoor: boolean;
+  personality: string[];
+  avatarUrl?: string;
+};
+
+export type VaccineRecord = {
+  id: string;
+  petId: string;
+  name: string;
+  doseNumber: number;
+  dateGiven: string;
+  nextDueDate?: string;
+  clinicName?: string;
+  notes?: string;
+};
+
+export type Reminder = {
+  id: string;
+  petId: string;
+  title: string;
+  category: string;
+  dueDate: string;
+  status: "pending" | "done" | "overdue";
+  notes?: string;
+};
+
+export type DiaryEntry = {
+  id: string;
+  petId: string;
+  date: string;
+  mood: "happy" | "sleepy" | "playful" | "grumpy" | "sick" | "calm";
+  food?: string;
+  activity?: string;
+  notes?: string;
+};
+
+export type PetPhoto = {
+  id: string;
+  petId: string;
+  imageUrl: string;
+  caption: string;
+  tags: string[];
+  date: string;
+};
