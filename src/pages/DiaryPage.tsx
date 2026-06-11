@@ -6,6 +6,8 @@ import DiaryForm from "../components/diary/DiaryForm";
 type Props = {
   entries: DiaryEntry[];
   onAdd: (entry: DiaryEntry) => void;
+  onUpdate: (entry: DiaryEntry) => void;
+  onDelete: (id: string) => void;
 };
 
 const moodEmoji: Record<DiaryEntry["mood"], string> = {
@@ -17,12 +19,28 @@ const moodEmoji: Record<DiaryEntry["mood"], string> = {
   calm: "😌",
 };
 
-export default function DiaryPage({ entries, onAdd }: Props) {
+export default function DiaryPage({ entries, onAdd, onUpdate, onDelete }: Props) {
   const [showForm, setShowForm] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
 
   function handleAdd(entry: DiaryEntry) {
     onAdd(entry);
     setShowForm(false);
+  }
+
+  function handleUpdate(entry: DiaryEntry) {
+    onUpdate(entry);
+    setEditingEntry(null);
+  }
+
+  function startEdit(entry: DiaryEntry) {
+    setEditingEntry(entry);
+    setShowForm(false);
+  }
+
+  function startAdd() {
+    setShowForm(true);
+    setEditingEntry(null);
   }
 
   const moodSummary = entries.reduce<Record<string, number>>((acc, e) => {
@@ -39,8 +57,8 @@ export default function DiaryPage({ entries, onAdd }: Props) {
           </h1>
           <p className="text-gray-400 text-sm mt-1">Daily notes and mood tracking</p>
         </div>
-        {!showForm && (
-          <button onClick={() => setShowForm(true)} className="btn-primary shrink-0">
+        {!showForm && !editingEntry && (
+          <button onClick={startAdd} className="btn-primary shrink-0">
             ＋ Add Entry
           </button>
         )}
@@ -48,6 +66,13 @@ export default function DiaryPage({ entries, onAdd }: Props) {
 
       {showForm && (
         <DiaryForm onSubmit={handleAdd} onCancel={() => setShowForm(false)} />
+      )}
+      {editingEntry && (
+        <DiaryForm
+          initialData={editingEntry}
+          onSubmit={handleUpdate}
+          onCancel={() => setEditingEntry(null)}
+        />
       )}
 
       {entries.length > 0 && (
@@ -74,7 +99,12 @@ export default function DiaryPage({ entries, onAdd }: Props) {
       ) : (
         <div className="space-y-4 max-w-xl">
           {entries.map((entry) => (
-            <DiaryCard key={entry.id} entry={entry} />
+            <DiaryCard
+              key={entry.id}
+              entry={entry}
+              onEdit={() => startEdit(entry)}
+              onDelete={() => onDelete(entry.id)}
+            />
           ))}
         </div>
       )}

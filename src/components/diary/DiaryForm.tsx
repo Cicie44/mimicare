@@ -4,6 +4,7 @@ import type { DiaryEntry } from "../../types";
 type Props = {
   onSubmit: (entry: DiaryEntry) => void;
   onCancel: () => void;
+  initialData?: DiaryEntry;
 };
 
 const MOODS: DiaryEntry["mood"][] = ["happy", "sleepy", "playful", "grumpy", "sick", "calm"];
@@ -21,17 +22,18 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function DiaryForm({ onSubmit, onCancel }: Props) {
-  const [date, setDate] = useState(todayISO());
-  const [mood, setMood] = useState<DiaryEntry["mood"]>("happy");
-  const [food, setFood] = useState("");
-  const [activity, setActivity] = useState("");
-  const [notes, setNotes] = useState("");
+export default function DiaryForm({ onSubmit, onCancel, initialData }: Props) {
+  const isEdit = !!initialData;
+  const [date, setDate] = useState(initialData?.date ?? todayISO());
+  const [mood, setMood] = useState<DiaryEntry["mood"]>(initialData?.mood ?? "happy");
+  const [food, setFood] = useState(initialData?.food ?? "");
+  const [activity, setActivity] = useState(initialData?.activity ?? "");
+  const [notes, setNotes] = useState(initialData?.notes ?? "");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     onSubmit({
-      id: `d-${Date.now()}`,
+      id: initialData?.id ?? `d-${Date.now()}`,
       petId: "mimi-01",
       date,
       mood,
@@ -43,7 +45,9 @@ export default function DiaryForm({ onSubmit, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="card border-rose-100 mb-6">
-      <h3 className="font-semibold text-gray-700 mb-4">✏️ New Diary Entry</h3>
+      <h3 className="font-semibold text-gray-700 mb-4">
+        {isEdit ? "✏️ Edit Diary Entry" : "✏️ New Diary Entry"}
+      </h3>
 
       <div className="grid sm:grid-cols-2 gap-4 mb-4">
         <FormField label="Date">
@@ -107,7 +111,7 @@ export default function DiaryForm({ onSubmit, onCancel }: Props) {
           Cancel
         </button>
         <button type="submit" className="btn-primary">
-          Save Entry 🐾
+          {isEdit ? "Save Changes 🐾" : "Save Entry 🐾"}
         </button>
       </div>
     </form>

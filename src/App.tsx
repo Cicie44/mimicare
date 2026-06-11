@@ -30,6 +30,22 @@ export default function App() {
     setReminders(reminders.map((r) => (r.id === id ? { ...r, status: "done" } : r)));
   }
 
+  function updateDiaryEntry(entry: DiaryEntry) {
+    setDiary(diary.map((e) => (e.id === entry.id ? entry : e)));
+  }
+
+  function updateReminder(reminder: Reminder) {
+    setReminders(reminders.map((r) => (r.id === reminder.id ? reminder : r)));
+  }
+
+  function deleteDiaryEntry(id: string) {
+    setDiary(diary.filter((e) => e.id !== id));
+  }
+
+  function deleteReminder(id: string) {
+    setReminders(reminders.filter((r) => r.id !== id));
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar currentPage={page} onNavigate={setPage} />
@@ -51,12 +67,14 @@ export default function App() {
           <RemindersPage
             reminders={reminders}
             onAdd={addReminder}
+            onUpdate={updateReminder}
             onMarkDone={markReminderDone}
+            onDelete={deleteReminder}
           />
         )}
         {page === "gallery" && <GalleryPage photos={mockPhotos} />}
         {page === "diary" && (
-          <DiaryPage entries={diary} onAdd={addDiaryEntry} />
+          <DiaryPage entries={diary} onAdd={addDiaryEntry} onUpdate={updateDiaryEntry} onDelete={deleteDiaryEntry} />
         )}
       </main>
 

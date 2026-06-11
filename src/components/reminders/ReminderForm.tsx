@@ -4,6 +4,7 @@ import type { Reminder } from "../../types";
 type Props = {
   onSubmit: (reminder: Reminder) => void;
   onCancel: () => void;
+  initialData?: Reminder;
 };
 
 const CATEGORIES = ["Health", "Grooming", "Nutrition", "Hygiene", "Play"];
@@ -12,40 +13,50 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function ReminderForm({ onSubmit, onCancel }: Props) {
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("Health");
-  const [dueDate, setDueDate] = useState(todayISO());
-  const [notes, setNotes] = useState("");
+export default function ReminderForm({ onSubmit, onCancel, initialData }: Props) {
+  const isEdit = !!initialData;
+  const [title, setTitle] = useState(initialData?.title ?? "");
+  const [category, setCategory] = useState(initialData?.category ?? "Health");
+  const [dueDate, setDueDate] = useState(initialData?.dueDate ?? todayISO());
+  const [notes, setNotes] = useState(initialData?.notes ?? "");
+  const [titleError, setTitleError] = useState(false);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      setTitleError(true);
+      return;
+    }
+    setTitleError(false);
     onSubmit({
-      id: `r-${Date.now()}`,
+      id: initialData?.id ?? `r-${Date.now()}`,
       petId: "mimi-01",
       title: title.trim(),
       category,
       dueDate,
-      status: "pending",
+      status: initialData?.status ?? "pending",
       notes: notes.trim() || undefined,
     });
   }
 
   return (
     <form onSubmit={handleSubmit} className="card border-amber-100 mb-6">
-      <h3 className="font-semibold text-gray-700 mb-4">➕ New Reminder</h3>
+      <h3 className="font-semibold text-gray-700 mb-4">
+        {isEdit ? "✏️ Edit Reminder" : "➕ New Reminder"}
+      </h3>
 
       <div className="space-y-4 mb-4">
         <FormField label="Title">
           <input
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => { setTitle(e.target.value); if (e.target.value.trim()) setTitleError(false); }}
             placeholder="e.g. Monthly flea & tick treatment"
-            required
-            className="input"
+            className={`input ${titleError ? "border-red-300 focus:ring-red-200 focus:border-red-300" : ""}`}
           />
+          {titleError && (
+            <p className="text-xs text-red-400 mt-1">Please enter a title 🐾</p>
+          )}
         </FormField>
 
         <div className="grid sm:grid-cols-2 gap-4">
@@ -90,7 +101,7 @@ export default function ReminderForm({ onSubmit, onCancel }: Props) {
           Cancel
         </button>
         <button type="submit" className="btn-primary">
-          Add Reminder 🔔
+          {isEdit ? "Save Changes 🔔" : "Add Reminder 🔔"}
         </button>
       </div>
     </form>

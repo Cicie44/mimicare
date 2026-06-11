@@ -3,6 +3,8 @@ import type { Reminder } from "../../types";
 type Props = {
   reminder: Reminder;
   onMarkDone?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 };
 
 const categoryEmoji: Record<string, string> = {
@@ -25,7 +27,12 @@ const statusLabel: Record<Reminder["status"], string> = {
   overdue: "Overdue ⚠️",
 };
 
-export default function ReminderCard({ reminder, onMarkDone }: Props) {
+export default function ReminderCard({ reminder, onMarkDone, onEdit, onDelete }: Props) {
+  function handleDelete() {
+    if (window.confirm("Delete this reminder? This cannot be undone.")) {
+      onDelete?.();
+    }
+  }
   return (
     <div className={`card border ${statusStyle[reminder.status]}`}>
       <div className="flex items-start justify-between gap-2">
@@ -56,13 +63,37 @@ export default function ReminderCard({ reminder, onMarkDone }: Props) {
         </p>
       )}
 
-      {reminder.status !== "done" && onMarkDone && (
-        <button
-          onClick={onMarkDone}
-          className="mt-3 text-xs text-green-600 hover:text-green-700 font-semibold flex items-center gap-1 transition-colors"
-        >
-          ✓ Mark as done
-        </button>
+      {(onMarkDone || onEdit || onDelete) && (
+        <div className="mt-3 flex items-center justify-between">
+          <div>
+            {reminder.status !== "done" && onMarkDone && (
+              <button
+                onClick={onMarkDone}
+                className="text-xs text-green-600 hover:text-green-700 font-semibold flex items-center gap-1 transition-colors"
+              >
+                ✓ Mark as done
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="text-xs text-gray-300 hover:text-rose-400 font-medium transition-colors"
+              >
+                ✏️ Edit
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={handleDelete}
+                className="text-xs text-gray-300 hover:text-red-400 font-medium transition-colors"
+              >
+                × Delete
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
