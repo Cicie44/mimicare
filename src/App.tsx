@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import type { User } from "@supabase/supabase-js";
+import { supabase } from "./lib/supabase";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
+import AuthPage from "./components/auth/AuthPage";
 import HomePage from "./pages/HomePage";
 import PetProfilePage from "./pages/PetProfilePage";
 import VaccinesPage from "./pages/VaccinesPage";
@@ -13,20 +16,58 @@ import * as diaryService from "./services/diaryService";
 import * as reminderService from "./services/reminderService";
 import * as petService from "./services/petService";
 import * as vaccineService from "./services/vaccineService";
+import * as authService from "./services/authService";
 
 type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary";
 type Toast = { type: "success" | "error"; message: string };
 
 export default function App() {
   const [page, setPage] = useState<Page>("home");
+
+  // Auth state
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Data state
   const [pet, setPet] = useState<Pet>(mockPet);
   const [vaccines, setVaccines] = useState<VaccineRecord[]>([]);
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
   const [toast, setToast] = useState<Toast | null>(null);
   const toastTimer = useRef<number | null>(null);
+
+  // ── Auth session ─────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadData(user.id);
+    } else {
+      // Clear data when logged out
+      setPet(mockPet);
+      setDiary([]);
+      setReminders([]);
+      setVaccines([]);
+      setPage("home");
+    }
+  }, [user]);
+
+  // ── Toast ────────────────────────────────────────────────────────────────────
 
   function showToast(type: Toast["type"], message: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -34,7 +75,9 @@ export default function App() {
     toastTimer.current = window.setTimeout(() => setToast(null), 3000);
   }
 
-  async function loadData() {
+  // ── Data loading ─────────────────────────────────────────────────────────────
+
+  async function loadData(userId: string) {
     setLoading(true);
     setLoadError(null);
     try {
@@ -46,8 +89,23 @@ export default function App() {
       ]);
       setDiary(entries);
       setReminders(rems);
-      if (fetchedPet) setPet(fetchedPet);
       setVaccines(vaxes);
+
+      if (fetchedPet) {
+        setPet(fetchedPet);
+      } else {
+        // New user — start with a blank profile (user fills it in themselves)
+        setPet({
+          id: userId,
+          name: "",
+          species: "Cat",
+          gender: "",
+          ageLabel: "",
+          neutered: false,
+          indoor: true,
+          personality: [],
+        });
+      }
     } catch (err) {
       console.error(err);
       setLoadError("Could not load data. Please check your Supabase connection.");
@@ -56,15 +114,21 @@ export default function App() {
     }
   }
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // ── Auth actions ──────────────────────────────────────────────────────────────
 
-  // ── Pet ─────────────────────────────────────────────────────────────────────
+  async function handleLogout() {
+    try {
+      await authService.signOut();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  // ── Pet ──────────────────────────────────────────────────────────────────────
 
   async function savePet(updated: Pet): Promise<void> {
     try {
-      const saved = await petService.upsertPet(updated);
+      const saved = await petService.upsertPet(updated, user!.id);
       setPet(saved);
       showToast("success", "Profile updated! 🐾");
     } catch (err) {
@@ -74,19 +138,22 @@ export default function App() {
     }
   }
 
-  // ── Vaccines ─────────────────────────────────────────────────────────────────
+  // ── Vaccines ──────────────────────────────────────────────────────────────────
 
   async function addVaccine(vaccine: VaccineRecord): Promise<void> {
     try {
-      const created = await vaccineService.createVaccine({
-        petId: vaccine.petId,
-        name: vaccine.name,
-        doseNumber: vaccine.doseNumber,
-        dateGiven: vaccine.dateGiven,
-        nextDueDate: vaccine.nextDueDate,
-        clinicName: vaccine.clinicName,
-        notes: vaccine.notes,
-      });
+      const created = await vaccineService.createVaccine(
+        {
+          petId: pet.id,
+          name: vaccine.name,
+          doseNumber: vaccine.doseNumber,
+          dateGiven: vaccine.dateGiven,
+          nextDueDate: vaccine.nextDueDate,
+          clinicName: vaccine.clinicName,
+          notes: vaccine.notes,
+        },
+        user!.id
+      );
       setVaccines((prev) => [created, ...prev]);
       showToast("success", "Vaccine record added! 💉");
     } catch (err) {
@@ -119,18 +186,21 @@ export default function App() {
     }
   }
 
-  // ── Diary ────────────────────────────────────────────────────────────────────
+  // ── Diary ─────────────────────────────────────────────────────────────────────
 
   async function addDiaryEntry(entry: DiaryEntry): Promise<void> {
     try {
-      const created = await diaryService.createDiaryEntry({
-        petId: entry.petId,
-        date: entry.date,
-        mood: entry.mood,
-        food: entry.food,
-        activity: entry.activity,
-        notes: entry.notes,
-      });
+      const created = await diaryService.createDiaryEntry(
+        {
+          petId: pet.id,
+          date: entry.date,
+          mood: entry.mood,
+          food: entry.food,
+          activity: entry.activity,
+          notes: entry.notes,
+        },
+        user!.id
+      );
       setDiary((prev) => [created, ...prev]);
       showToast("success", "Diary entry saved! 🐾");
     } catch (err) {
@@ -163,18 +233,21 @@ export default function App() {
     }
   }
 
-  // ── Reminders ────────────────────────────────────────────────────────────────
+  // ── Reminders ─────────────────────────────────────────────────────────────────
 
   async function addReminder(reminder: Reminder): Promise<void> {
     try {
-      const created = await reminderService.createReminder({
-        petId: reminder.petId,
-        title: reminder.title,
-        category: reminder.category,
-        dueDate: reminder.dueDate,
-        status: reminder.status,
-        notes: reminder.notes,
-      });
+      const created = await reminderService.createReminder(
+        {
+          petId: pet.id,
+          title: reminder.title,
+          category: reminder.category,
+          dueDate: reminder.dueDate,
+          status: reminder.status,
+          notes: reminder.notes,
+        },
+        user!.id
+      );
       setReminders((prev) => [created, ...prev]);
       showToast("success", "Reminder added! 🔔");
     } catch (err) {
@@ -222,7 +295,24 @@ export default function App() {
     }
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────────
+
+  // Checking auth session on startup
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-orange-50 flex items-center justify-center">
+        <div className="text-center text-gray-400">
+          <p className="text-5xl mb-3">🐾</p>
+          <p className="text-sm font-medium">Loading MimiCare...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in — show auth page
+  if (!user) {
+    return <AuthPage onAuthSuccess={() => {}} />;
+  }
 
   function renderContent() {
     if (loading) {
@@ -244,7 +334,7 @@ export default function App() {
             <code className="bg-gray-100 px-1 rounded">.env</code> file has the
             correct Supabase URL and anon key.
           </p>
-          <button onClick={loadData} className="btn-primary">
+          <button onClick={() => loadData(user!.id)} className="btn-primary">
             🔄 Retry
           </button>
         </div>
@@ -278,6 +368,7 @@ export default function App() {
         {page === "reminders" && (
           <RemindersPage
             reminders={reminders}
+            petId={pet.id}
             onAdd={addReminder}
             onUpdate={updateReminder}
             onMarkDone={markReminderDone}
@@ -288,6 +379,7 @@ export default function App() {
         {page === "diary" && (
           <DiaryPage
             entries={diary}
+            petId={pet.id}
             onAdd={addDiaryEntry}
             onUpdate={updateDiaryEntry}
             onDelete={deleteDiaryEntry}
@@ -299,7 +391,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar currentPage={page} onNavigate={setPage} />
+      <Navbar
+        currentPage={page}
+        onNavigate={setPage}
+        userEmail={user.email}
+        onLogout={handleLogout}
+      />
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
         {renderContent()}
       </main>

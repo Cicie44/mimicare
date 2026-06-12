@@ -42,11 +42,12 @@ export async function fetchPet(): Promise<Pet | null> {
   return rowToPet(data as PetRow);
 }
 
-export async function upsertPet(pet: Pet): Promise<Pet> {
+export async function upsertPet(pet: Pet, userId: string): Promise<Pet> {
   const { data, error } = await supabase
     .from("pets")
     .upsert({
-      id: pet.id,
+      id: userId,
+      user_id: userId,
       name: pet.name,
       species: pet.species,
       breed: pet.breed ?? null,

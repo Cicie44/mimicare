@@ -7,13 +7,14 @@ type Filter = "all" | Reminder["status"];
 
 type Props = {
   reminders: Reminder[];
+  petId: string;
   onAdd: (reminder: Reminder) => Promise<void>;
   onUpdate: (reminder: Reminder) => Promise<void>;
   onMarkDone: (id: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 };
 
-export default function RemindersPage({ reminders, onAdd, onUpdate, onMarkDone, onDelete }: Props) {
+export default function RemindersPage({ reminders, petId, onAdd, onUpdate, onMarkDone, onDelete }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
@@ -67,10 +68,11 @@ export default function RemindersPage({ reminders, onAdd, onUpdate, onMarkDone, 
       </div>
 
       {showForm && (
-        <ReminderForm onSubmit={handleAdd} onCancel={() => setShowForm(false)} />
+        <ReminderForm petId={petId} onSubmit={handleAdd} onCancel={() => setShowForm(false)} />
       )}
       {editingReminder && (
         <ReminderForm
+          petId={petId}
           initialData={editingReminder}
           onSubmit={handleUpdate}
           onCancel={() => setEditingReminder(null)}

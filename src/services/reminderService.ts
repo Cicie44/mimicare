@@ -35,11 +35,13 @@ export async function fetchReminders(): Promise<Reminder[]> {
 }
 
 export async function createReminder(
-  reminder: Omit<Reminder, "id">
+  reminder: Omit<Reminder, "id">,
+  userId: string
 ): Promise<Reminder> {
   const { data, error } = await supabase
     .from("reminders")
     .insert({
+      user_id: userId,
       pet_id: reminder.petId,
       title: reminder.title,
       category: reminder.category,

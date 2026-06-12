@@ -69,9 +69,9 @@ So I built MimiCare: a small, warm, focused app designed around one cat's life. 
 | [TypeScript](https://www.typescriptlang.org/) | Type safety |
 | [Vite](https://vitejs.dev/) | Fast dev server and bundler |
 | [Tailwind CSS v3](https://tailwindcss.com/) | Utility-first styling |
-| [Supabase](https://supabase.com/) | PostgreSQL database and client |
+| [Supabase](https://supabase.com/) | PostgreSQL database, Auth, and client |
 
-Pet profile, vaccines, diary entries, and reminders are persisted in Supabase. Photo gallery uses static mock data for now. Authentication is planned for a future phase.
+Pet profile, vaccines, diary entries, and reminders are persisted in Supabase. User authentication uses Supabase Auth with email/password. Each user's data is isolated via Row Level Security (RLS). Photo gallery uses static mock data for now.
 
 ---
 
@@ -106,6 +106,7 @@ src/
 ├── lib/
 │   └── supabase.ts        # Supabase client instance
 ├── services/
+│   ├── authService.ts     # Supabase Auth (signUp, signIn, signOut, session)
 │   ├── petService.ts      # Supabase upsert/fetch for pets
 │   ├── vaccineService.ts  # Supabase CRUD for vaccines
 │   ├── diaryService.ts    # Supabase CRUD for diary_entries
@@ -119,7 +120,10 @@ src/
 │   └── DiaryPage.tsx
 ├── types/
 │   └── index.ts           # TypeScript types: Pet, VaccineRecord, Reminder, DiaryEntry, PetPhoto
-├── App.tsx                # Page routing, Supabase data loading, CRUD handlers
+├── components/
+│   └── auth/
+│       └── AuthPage.tsx       # Login / sign-up page
+├── App.tsx                # Auth state, page routing, Supabase data loading, CRUD handlers
 └── main.tsx
 ```
 
@@ -142,13 +146,19 @@ cp .env.example .env
 # Then edit .env and fill in your Supabase project URL and anon key
 ```
 
-**4. Create Supabase tables**
+**4. Enable Supabase Auth**
+
+In your Supabase project → Authentication → Providers, make sure **Email** is enabled.
+
+**5. Create Supabase tables with RLS**
 
 In your Supabase project's SQL editor, run:
 
 ```sql
+-- Tables with user_id for row-level isolation
 create table pets (
   id text primary key,
+  user_id uuid references auth.users(id) not null,
   name text not null,
   species text not null,
   breed text,
@@ -165,6 +175,7 @@ create table pets (
 
 create table vaccines (
   id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) not null,
   pet_id text not null,
   name text not null,
   dose_number integer not null default 1,
@@ -177,6 +188,7 @@ create table vaccines (
 
 create table diary_entries (
   id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) not null,
   pet_id text not null,
   date date not null,
   mood text not null,
@@ -188,6 +200,7 @@ create table diary_entries (
 
 create table reminders (
   id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) not null,
   pet_id text not null,
   title text not null,
   category text not null,
@@ -196,10 +209,37 @@ create table reminders (
   notes text,
   created_at timestamptz default now()
 );
+
+-- Enable Row Level Security
+alter table pets enable row level security;
+alter table vaccines enable row level security;
+alter table diary_entries enable row level security;
+alter table reminders enable row level security;
+
+-- RLS policies — each user can only access their own rows
+create policy "Users manage own pets"
+  on pets for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users manage own vaccines"
+  on vaccines for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users manage own diary entries"
+  on diary_entries for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users manage own reminders"
+  on reminders for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 ```
 
 ```bash
-# 5. Start the dev server
+# 6. Start the dev server
 npm run dev
 ```
 
@@ -232,11 +272,11 @@ npm run preview
 
 ## 📍 Current Status
 
-**Phase 3.5 — Extended Supabase Integration (current)**
+**Phase 4 — Supabase Auth + RLS (current)**
 
-Pet profile, vaccines, diary entries, and reminders are all persisted in Supabase PostgreSQL. Full CRUD is supported across all four data types. Photo gallery is the only remaining mock data section.
+Email/password authentication is fully integrated. Each user has their own isolated pet profile, vaccine records, diary entries, and reminders — enforced by Supabase Row Level Security policies. New users automatically get a default Mimi profile on first sign-in.
 
-UX polish: loading state on startup, retry button on connection failure, submit loading states on all forms, success/error toast notifications for every operation.
+UX: login/sign-up page with cute MimiCare styling, loading screen on session check, logout button in the navbar, success/error toasts for all CRUD operations. Photo gallery remains static mock data (planned for Phase 5 with Supabase Storage).
 
 ---
 
@@ -259,15 +299,18 @@ Add, edit, delete diary entries and reminders. Data stored in `localStorage`.
 - Edit Pet Profile form with all fields
 - Vaccine CRUD: add, edit, delete vaccine records with status badges preserved
 - Inline form validation and submit loading states across all forms
-- Photo gallery remains mock data (upload planned for Phase 4)
+- Photo gallery remains mock data
 
-### Phase 4 — Auth & Uploads
-- User authentication with Supabase Auth
+### ✅ Phase 4 — Auth & RLS (complete)
+- Email/password authentication via Supabase Auth
+- Login and sign-up page with cute MimiCare styling
+- Session persistence across page refreshes
+- Each user's data isolated by `user_id` column + RLS policies
+- New users automatically initialized with a default Mimi pet profile
+- Logout button in the navbar
+
+### Phase 5 — Photo Upload & Extra Features
 - Photo upload via Supabase Storage
-- User-specific pet data
-- Row Level Security policies
-
-### Phase 5 — Extra Features
 - Multi-pet support
 - Reminder notifications (browser push or email)
 - Calendar view for vaccines and appointments

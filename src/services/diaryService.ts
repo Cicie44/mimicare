@@ -35,11 +35,13 @@ export async function fetchDiaryEntries(): Promise<DiaryEntry[]> {
 }
 
 export async function createDiaryEntry(
-  entry: Omit<DiaryEntry, "id">
+  entry: Omit<DiaryEntry, "id">,
+  userId: string
 ): Promise<DiaryEntry> {
   const { data, error } = await supabase
     .from("diary_entries")
     .insert({
+      user_id: userId,
       pet_id: entry.petId,
       date: entry.date,
       mood: entry.mood,

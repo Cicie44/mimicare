@@ -5,6 +5,7 @@ type Props = {
   onSubmit: (entry: DiaryEntry) => Promise<void>;
   onCancel: () => void;
   initialData?: DiaryEntry;
+  petId: string;
 };
 
 const MOODS: DiaryEntry["mood"][] = ["happy", "sleepy", "playful", "grumpy", "sick", "calm"];
@@ -22,7 +23,7 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function DiaryForm({ onSubmit, onCancel, initialData }: Props) {
+export default function DiaryForm({ onSubmit, onCancel, initialData, petId }: Props) {
   const isEdit = !!initialData;
   const [date, setDate] = useState(initialData?.date ?? todayISO());
   const [mood, setMood] = useState<DiaryEntry["mood"]>(initialData?.mood ?? "happy");
@@ -37,7 +38,7 @@ export default function DiaryForm({ onSubmit, onCancel, initialData }: Props) {
     try {
       await onSubmit({
         id: initialData?.id ?? `d-${Date.now()}`,
-        petId: "mimi-01",
+        petId,
         date,
         mood,
         food: food.trim() || undefined,

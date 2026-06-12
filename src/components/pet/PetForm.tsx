@@ -10,7 +10,7 @@ type Props = {
 export default function PetForm({ pet, onSubmit, onCancel }: Props) {
   const [name, setName] = useState(pet.name);
   const [breed, setBreed] = useState(pet.breed ?? "");
-  const [gender, setGender] = useState(pet.gender);
+  const [gender, setGender] = useState(pet.gender || "Female");
   const [birthday, setBirthday] = useState(pet.birthday ?? "");
   const [ageLabel, setAgeLabel] = useState(pet.ageLabel);
   const [neutered, setNeutered] = useState(pet.neutered);

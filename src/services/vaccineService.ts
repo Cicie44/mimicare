@@ -35,11 +35,13 @@ export async function fetchVaccines(): Promise<VaccineRecord[]> {
 }
 
 export async function createVaccine(
-  vaccine: Omit<VaccineRecord, "id">
+  vaccine: Omit<VaccineRecord, "id">,
+  userId: string
 ): Promise<VaccineRecord> {
   const { data, error } = await supabase
     .from("vaccines")
     .insert({
+      user_id: userId,
       pet_id: vaccine.petId,
       name: vaccine.name,
       dose_number: vaccine.doseNumber,

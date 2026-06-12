@@ -5,6 +5,7 @@ type Props = {
   onSubmit: (reminder: Reminder) => Promise<void>;
   onCancel: () => void;
   initialData?: Reminder;
+  petId: string;
 };
 
 const CATEGORIES = ["Health", "Grooming", "Nutrition", "Hygiene", "Play"];
@@ -13,7 +14,7 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function ReminderForm({ onSubmit, onCancel, initialData }: Props) {
+export default function ReminderForm({ onSubmit, onCancel, initialData, petId }: Props) {
   const isEdit = !!initialData;
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [category, setCategory] = useState(initialData?.category ?? "Health");
@@ -33,7 +34,7 @@ export default function ReminderForm({ onSubmit, onCancel, initialData }: Props)
     try {
       await onSubmit({
         id: initialData?.id ?? `r-${Date.now()}`,
-        petId: "mimi-01",
+        petId,
         title: title.trim(),
         category,
         dueDate,

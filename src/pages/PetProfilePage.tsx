@@ -9,7 +9,8 @@ type Props = {
 };
 
 export default function PetProfilePage({ pet, onUpdate }: Props) {
-  const [showForm, setShowForm] = useState(false);
+  const isNew = !pet.name;
+  const [showForm, setShowForm] = useState(isNew);
 
   async function handleUpdate(updated: Pet) {
     await onUpdate(updated);
@@ -23,9 +24,11 @@ export default function PetProfilePage({ pet, onUpdate }: Props) {
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             🐱 Pet Profile
           </h1>
-          <p className="text-gray-400 text-sm mt-1">Everything about Mimi</p>
+          <p className="text-gray-400 text-sm mt-1">
+            {isNew && !showForm ? "Tell us about your pet!" : pet.name ? `Everything about ${pet.name}` : "Create your pet profile"}
+          </p>
         </div>
-        {!showForm && (
+        {!showForm && !isNew && (
           <button onClick={() => setShowForm(true)} className="btn-primary shrink-0">
             ✏️ Edit Profile
           </button>
@@ -34,7 +37,20 @@ export default function PetProfilePage({ pet, onUpdate }: Props) {
 
       <div className="max-w-xl mx-auto">
         {showForm ? (
-          <PetForm pet={pet} onSubmit={handleUpdate} onCancel={() => setShowForm(false)} />
+          <PetForm
+            pet={pet}
+            onSubmit={handleUpdate}
+            onCancel={() => setShowForm(false)}
+          />
+        ) : isNew ? (
+          <div className="text-center py-16 text-gray-400">
+            <p className="text-5xl mb-3">🐱</p>
+            <p className="font-medium text-gray-500">No pet profile yet</p>
+            <p className="text-sm mt-1 mb-6">Add your pet's info to get started!</p>
+            <button onClick={() => setShowForm(true)} className="btn-primary">
+              ＋ Create Profile
+            </button>
+          </div>
         ) : (
           <>
             <PetProfileCard pet={pet} />
