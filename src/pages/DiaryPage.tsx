@@ -5,9 +5,9 @@ import DiaryForm from "../components/diary/DiaryForm";
 
 type Props = {
   entries: DiaryEntry[];
-  onAdd: (entry: DiaryEntry) => void;
-  onUpdate: (entry: DiaryEntry) => void;
-  onDelete: (id: string) => void;
+  onAdd: (entry: DiaryEntry) => Promise<void>;
+  onUpdate: (entry: DiaryEntry) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 };
 
 const moodEmoji: Record<DiaryEntry["mood"], string> = {
@@ -23,13 +23,13 @@ export default function DiaryPage({ entries, onAdd, onUpdate, onDelete }: Props)
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
 
-  function handleAdd(entry: DiaryEntry) {
-    onAdd(entry);
+  async function handleAdd(entry: DiaryEntry) {
+    await onAdd(entry);
     setShowForm(false);
   }
 
-  function handleUpdate(entry: DiaryEntry) {
-    onUpdate(entry);
+  async function handleUpdate(entry: DiaryEntry) {
+    await onUpdate(entry);
     setEditingEntry(null);
   }
 

@@ -4,7 +4,7 @@
 
 MimiCare is a frontend pet care web application that helps cat owners track health records, vaccine schedules, daily care reminders, diary entries, and photo memories — all in one cozy place.
 
-This project is both a real-use personal tool and a portfolio project demonstrating React, TypeScript, and component-based UI design.
+This project is both a real-use personal tool and a portfolio project demonstrating React, TypeScript, Supabase, and component-based UI design.
 
 ---
 
@@ -18,7 +18,7 @@ So I built MimiCare: a small, warm, focused app designed around one cat's life. 
 
 ---
 
-## ✨ Features (Phase 1 — Static Frontend)
+## ✨ Features
 
 ### 🏠 Home Dashboard
 - Hero section with Mimi's avatar and welcome message
@@ -41,8 +41,11 @@ So I built MimiCare: a small, warm, focused app designed around one cat's life. 
 
 ### 🔔 Care Reminders
 - Grouped by status: Overdue / Pending / Done
+- Filter tabs: All / Pending / Overdue / Done
+- Add, edit, delete reminders
 - Category icons (Health, Grooming, Nutrition, Hygiene)
 - Color-coded status badges
+- Persisted in Supabase database
 
 ### 📸 Photo Gallery
 - Responsive grid of photo memory cards
@@ -51,8 +54,10 @@ So I built MimiCare: a small, warm, focused app designed around one cat's life. 
 
 ### 📖 Diary
 - Daily entries with mood, food, activity, and personal notes
+- Add, edit, delete diary entries
 - Mood badges with color coding (happy, sleepy, playful, grumpy, sick, calm)
 - Mood frequency summary overview
+- Persisted in Supabase database
 
 ---
 
@@ -64,8 +69,9 @@ So I built MimiCare: a small, warm, focused app designed around one cat's life. 
 | [TypeScript](https://www.typescriptlang.org/) | Type safety |
 | [Vite](https://vitejs.dev/) | Fast dev server and bundler |
 | [Tailwind CSS v3](https://tailwindcss.com/) | Utility-first styling |
+| [Supabase](https://supabase.com/) | PostgreSQL database and client |
 
-No backend, no database, no authentication in Phase 1. All data is static mock data.
+Pet profile, vaccines, diary entries, and reminders are persisted in Supabase. Photo gallery uses static mock data for now. Authentication is planned for a future phase.
 
 ---
 
@@ -80,17 +86,30 @@ src/
 │   │   ├── Navbar.tsx
 │   │   └── Footer.tsx
 │   ├── pet/
-│   │   └── PetProfileCard.tsx
+│   │   ├── PetProfileCard.tsx
+│   │   └── PetForm.tsx
 │   ├── health/
-│   │   └── VaccineCard.tsx
+│   │   ├── VaccineCard.tsx
+│   │   └── VaccineForm.tsx
 │   ├── reminders/
-│   │   └── ReminderCard.tsx
+│   │   ├── ReminderCard.tsx
+│   │   └── ReminderForm.tsx
 │   ├── gallery/
 │   │   └── PhotoCard.tsx
 │   └── diary/
-│       └── DiaryCard.tsx
+│       ├── DiaryCard.tsx
+│       └── DiaryForm.tsx
 ├── data/
-│   └── mockData.ts        # All static mock data for Mimi
+│   └── mockData.ts        # Static mock data (pet, vaccines, photos)
+├── hooks/
+│   └── useLocalStorage.ts # Retained for potential future use
+├── lib/
+│   └── supabase.ts        # Supabase client instance
+├── services/
+│   ├── petService.ts      # Supabase upsert/fetch for pets
+│   ├── vaccineService.ts  # Supabase CRUD for vaccines
+│   ├── diaryService.ts    # Supabase CRUD for diary_entries
+│   └── reminderService.ts # Supabase CRUD for reminders
 ├── pages/
 │   ├── HomePage.tsx
 │   ├── PetProfilePage.tsx
@@ -100,7 +119,7 @@ src/
 │   └── DiaryPage.tsx
 ├── types/
 │   └── index.ts           # TypeScript types: Pet, VaccineRecord, Reminder, DiaryEntry, PetPhoto
-├── App.tsx                # Page routing via useState
+├── App.tsx                # Page routing, Supabase data loading, CRUD handlers
 └── main.tsx
 ```
 
@@ -108,7 +127,7 @@ src/
 
 ## 🚀 How to Run Locally
 
-**Requirements:** Node.js 18+
+**Requirements:** Node.js 18+, a free [Supabase](https://supabase.com/) account
 
 ```bash
 # 1. Clone the repo
@@ -118,7 +137,69 @@ cd mimicare
 # 2. Install dependencies
 npm install
 
-# 3. Start the dev server
+# 3. Set up environment variables
+cp .env.example .env
+# Then edit .env and fill in your Supabase project URL and anon key
+```
+
+**4. Create Supabase tables**
+
+In your Supabase project's SQL editor, run:
+
+```sql
+create table pets (
+  id text primary key,
+  name text not null,
+  species text not null,
+  breed text,
+  gender text not null,
+  birthday date,
+  age_label text not null,
+  neutered boolean not null default false,
+  indoor boolean not null default true,
+  personality text[] not null default '{}',
+  avatar_url text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table vaccines (
+  id uuid primary key default gen_random_uuid(),
+  pet_id text not null,
+  name text not null,
+  dose_number integer not null default 1,
+  date_given date not null,
+  next_due_date date,
+  clinic_name text,
+  notes text,
+  created_at timestamptz default now()
+);
+
+create table diary_entries (
+  id uuid primary key default gen_random_uuid(),
+  pet_id text not null,
+  date date not null,
+  mood text not null,
+  food text,
+  activity text,
+  notes text,
+  created_at timestamptz default now()
+);
+
+create table reminders (
+  id uuid primary key default gen_random_uuid(),
+  pet_id text not null,
+  title text not null,
+  category text not null,
+  due_date date not null,
+  status text not null default 'pending',
+  notes text,
+  created_at timestamptz default now()
+);
+```
+
+```bash
+# 5. Start the dev server
 npm run dev
 ```
 
@@ -151,30 +232,40 @@ npm run preview
 
 ## 📍 Current Status
 
-**Phase 1 — Static Frontend (complete)**
+**Phase 3.5 — Extended Supabase Integration (current)**
 
-All pages are built with mock data. No backend, no database, no login required.
+Pet profile, vaccines, diary entries, and reminders are all persisted in Supabase PostgreSQL. Full CRUD is supported across all four data types. Photo gallery is the only remaining mock data section.
 
-The app is fully navigable and responsive across mobile, tablet, and desktop.
+UX polish: loading state on startup, retry button on connection failure, submit loading states on all forms, success/error toast notifications for every operation.
 
 ---
 
 ## 🗺 Roadmap
 
-### Phase 2 — Local CRUD
-- Add, edit, and delete diary entries
-- Add and complete reminders
-- Edit pet profile
-- Data stored in browser `localStorage`
+### ✅ Phase 1 — Static Frontend (complete)
+All pages built with mock data. Fully navigable and responsive.
 
-### Phase 3 — Supabase Integration
-- Replace mock data with a real PostgreSQL database via Supabase
-- Persistent storage for: `pets`, `vaccines`, `reminders`, `diary_entries`, `photos`
+### ✅ Phase 2 — Local CRUD (complete)
+Add, edit, delete diary entries and reminders. Data stored in `localStorage`.
+
+### ✅ Phase 3 — Supabase Integration (complete)
+- Diary entries and reminders persisted in Supabase PostgreSQL
+- Service layer with mapper functions (snake_case DB ↔ camelCase frontend)
+- Loading state on initial data fetch, retry button on failure
+- Toast notifications for all CRUD operations
+
+### ✅ Phase 3.5 — Extended Supabase Integration (complete)
+- Pet profile and vaccine records now also persisted in Supabase
+- Edit Pet Profile form with all fields
+- Vaccine CRUD: add, edit, delete vaccine records with status badges preserved
+- Inline form validation and submit loading states across all forms
+- Photo gallery remains mock data (upload planned for Phase 4)
 
 ### Phase 4 — Auth & Uploads
 - User authentication with Supabase Auth
 - Photo upload via Supabase Storage
 - User-specific pet data
+- Row Level Security policies
 
 ### Phase 5 — Extra Features
 - Multi-pet support

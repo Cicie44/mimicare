@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import HomePage from "./pages/HomePage";
@@ -7,62 +7,274 @@ import VaccinesPage from "./pages/VaccinesPage";
 import RemindersPage from "./pages/RemindersPage";
 import GalleryPage from "./pages/GalleryPage";
 import DiaryPage from "./pages/DiaryPage";
-import { mockPet, mockVaccines, mockReminders, mockDiary, mockPhotos } from "./data/mockData";
-import type { DiaryEntry, Reminder } from "./types";
-import { useLocalStorage } from "./hooks/useLocalStorage";
+import { mockPet, mockPhotos } from "./data/mockData";
+import type { DiaryEntry, Pet, Reminder, VaccineRecord } from "./types";
+import * as diaryService from "./services/diaryService";
+import * as reminderService from "./services/reminderService";
+import * as petService from "./services/petService";
+import * as vaccineService from "./services/vaccineService";
 
 type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary";
+type Toast = { type: "success" | "error"; message: string };
 
 export default function App() {
   const [page, setPage] = useState<Page>("home");
-  const [diary, setDiary] = useLocalStorage<DiaryEntry[]>("mimicare-diary", mockDiary);
-  const [reminders, setReminders] = useLocalStorage<Reminder[]>("mimicare-reminders", mockReminders);
+  const [pet, setPet] = useState<Pet>(mockPet);
+  const [vaccines, setVaccines] = useState<VaccineRecord[]>([]);
+  const [diary, setDiary] = useState<DiaryEntry[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
+  const toastTimer = useRef<number | null>(null);
 
-  function addDiaryEntry(entry: DiaryEntry) {
-    setDiary([entry, ...diary]);
+  function showToast(type: Toast["type"], message: string) {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ type, message });
+    toastTimer.current = window.setTimeout(() => setToast(null), 3000);
   }
 
-  function addReminder(reminder: Reminder) {
-    setReminders([reminder, ...reminders]);
+  async function loadData() {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const [entries, rems, fetchedPet, vaxes] = await Promise.all([
+        diaryService.fetchDiaryEntries(),
+        reminderService.fetchReminders(),
+        petService.fetchPet(),
+        vaccineService.fetchVaccines(),
+      ]);
+      setDiary(entries);
+      setReminders(rems);
+      if (fetchedPet) setPet(fetchedPet);
+      setVaccines(vaxes);
+    } catch (err) {
+      console.error(err);
+      setLoadError("Could not load data. Please check your Supabase connection.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function markReminderDone(id: string) {
-    setReminders(reminders.map((r) => (r.id === id ? { ...r, status: "done" } : r)));
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // ── Pet ─────────────────────────────────────────────────────────────────────
+
+  async function savePet(updated: Pet): Promise<void> {
+    try {
+      const saved = await petService.upsertPet(updated);
+      setPet(saved);
+      showToast("success", "Profile updated! 🐾");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to update profile.");
+      throw err;
+    }
   }
 
-  function updateDiaryEntry(entry: DiaryEntry) {
-    setDiary(diary.map((e) => (e.id === entry.id ? entry : e)));
+  // ── Vaccines ─────────────────────────────────────────────────────────────────
+
+  async function addVaccine(vaccine: VaccineRecord): Promise<void> {
+    try {
+      const created = await vaccineService.createVaccine({
+        petId: vaccine.petId,
+        name: vaccine.name,
+        doseNumber: vaccine.doseNumber,
+        dateGiven: vaccine.dateGiven,
+        nextDueDate: vaccine.nextDueDate,
+        clinicName: vaccine.clinicName,
+        notes: vaccine.notes,
+      });
+      setVaccines((prev) => [created, ...prev]);
+      showToast("success", "Vaccine record added! 💉");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to save vaccine record.");
+      throw err;
+    }
   }
 
-  function updateReminder(reminder: Reminder) {
-    setReminders(reminders.map((r) => (r.id === reminder.id ? reminder : r)));
+  async function editVaccine(vaccine: VaccineRecord): Promise<void> {
+    try {
+      await vaccineService.updateVaccine(vaccine);
+      setVaccines((prev) => prev.map((v) => (v.id === vaccine.id ? vaccine : v)));
+      showToast("success", "Vaccine record updated! 💉");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to update vaccine record.");
+      throw err;
+    }
   }
 
-  function deleteDiaryEntry(id: string) {
-    setDiary(diary.filter((e) => e.id !== id));
+  async function removeVaccine(id: string): Promise<void> {
+    try {
+      await vaccineService.deleteVaccine(id);
+      setVaccines((prev) => prev.filter((v) => v.id !== id));
+      showToast("success", "Vaccine record deleted.");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to delete vaccine record.");
+    }
   }
 
-  function deleteReminder(id: string) {
-    setReminders(reminders.filter((r) => r.id !== id));
+  // ── Diary ────────────────────────────────────────────────────────────────────
+
+  async function addDiaryEntry(entry: DiaryEntry): Promise<void> {
+    try {
+      const created = await diaryService.createDiaryEntry({
+        petId: entry.petId,
+        date: entry.date,
+        mood: entry.mood,
+        food: entry.food,
+        activity: entry.activity,
+        notes: entry.notes,
+      });
+      setDiary((prev) => [created, ...prev]);
+      showToast("success", "Diary entry saved! 🐾");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to save diary entry. Please try again.");
+      throw err;
+    }
   }
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar currentPage={page} onNavigate={setPage} />
+  async function updateDiaryEntry(entry: DiaryEntry): Promise<void> {
+    try {
+      await diaryService.updateDiaryEntry(entry);
+      setDiary((prev) => prev.map((e) => (e.id === entry.id ? entry : e)));
+      showToast("success", "Diary entry updated! 🐾");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to update diary entry.");
+      throw err;
+    }
+  }
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+  async function deleteDiaryEntry(id: string): Promise<void> {
+    try {
+      await diaryService.deleteDiaryEntry(id);
+      setDiary((prev) => prev.filter((e) => e.id !== id));
+      showToast("success", "Diary entry deleted.");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to delete. Please try again.");
+    }
+  }
+
+  // ── Reminders ────────────────────────────────────────────────────────────────
+
+  async function addReminder(reminder: Reminder): Promise<void> {
+    try {
+      const created = await reminderService.createReminder({
+        petId: reminder.petId,
+        title: reminder.title,
+        category: reminder.category,
+        dueDate: reminder.dueDate,
+        status: reminder.status,
+        notes: reminder.notes,
+      });
+      setReminders((prev) => [created, ...prev]);
+      showToast("success", "Reminder added! 🔔");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to save reminder. Please try again.");
+      throw err;
+    }
+  }
+
+  async function markReminderDone(id: string): Promise<void> {
+    try {
+      await reminderService.markReminderDone(id);
+      setReminders((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: "done" as const } : r))
+      );
+      showToast("success", "Marked as done! ✅");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to update reminder.");
+    }
+  }
+
+  async function updateReminder(reminder: Reminder): Promise<void> {
+    try {
+      await reminderService.updateReminder(reminder);
+      setReminders((prev) =>
+        prev.map((r) => (r.id === reminder.id ? reminder : r))
+      );
+      showToast("success", "Reminder updated! 🔔");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to update reminder.");
+      throw err;
+    }
+  }
+
+  async function deleteReminder(id: string): Promise<void> {
+    try {
+      await reminderService.deleteReminder(id);
+      setReminders((prev) => prev.filter((r) => r.id !== id));
+      showToast("success", "Reminder deleted.");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to delete. Please try again.");
+    }
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+
+  function renderContent() {
+    if (loading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-24 text-gray-400">
+          <p className="text-5xl mb-3">🐱</p>
+          <p className="text-sm font-medium">Loading Mimi's data...</p>
+        </div>
+      );
+    }
+
+    if (loadError) {
+      return (
+        <div className="flex flex-col items-center justify-center py-24">
+          <p className="text-5xl mb-3">😿</p>
+          <p className="font-medium text-gray-600 text-center max-w-sm mb-1">{loadError}</p>
+          <p className="text-xs text-gray-400 text-center max-w-sm mb-5">
+            Make sure your{" "}
+            <code className="bg-gray-100 px-1 rounded">.env</code> file has the
+            correct Supabase URL and anon key.
+          </p>
+          <button onClick={loadData} className="btn-primary">
+            🔄 Retry
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <>
         {page === "home" && (
           <HomePage
-            pet={mockPet}
-            vaccines={mockVaccines}
+            pet={pet}
+            vaccines={vaccines}
             reminders={reminders}
             diary={diary}
             photos={mockPhotos}
             onNavigate={setPage}
           />
         )}
-        {page === "profile" && <PetProfilePage pet={mockPet} />}
-        {page === "vaccines" && <VaccinesPage vaccines={mockVaccines} />}
+        {page === "profile" && (
+          <PetProfilePage pet={pet} onUpdate={savePet} />
+        )}
+        {page === "vaccines" && (
+          <VaccinesPage
+            vaccines={vaccines}
+            petId={pet.id}
+            onAdd={addVaccine}
+            onUpdate={editVaccine}
+            onDelete={removeVaccine}
+          />
+        )}
         {page === "reminders" && (
           <RemindersPage
             reminders={reminders}
@@ -74,11 +286,37 @@ export default function App() {
         )}
         {page === "gallery" && <GalleryPage photos={mockPhotos} />}
         {page === "diary" && (
-          <DiaryPage entries={diary} onAdd={addDiaryEntry} onUpdate={updateDiaryEntry} onDelete={deleteDiaryEntry} />
+          <DiaryPage
+            entries={diary}
+            onAdd={addDiaryEntry}
+            onUpdate={updateDiaryEntry}
+            onDelete={deleteDiaryEntry}
+          />
         )}
-      </main>
+      </>
+    );
+  }
 
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar currentPage={page} onNavigate={setPage} />
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+        {renderContent()}
+      </main>
       <Footer />
+
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl shadow-lg text-sm font-medium border ${
+            toast.type === "success"
+              ? "bg-green-50 border-green-200 text-green-700"
+              : "bg-red-50 border-red-200 text-red-500"
+          }`}
+        >
+          <span>{toast.type === "success" ? "✓" : "😿"}</span>
+          <span>{toast.message}</span>
+        </div>
+      )}
     </div>
   );
 }

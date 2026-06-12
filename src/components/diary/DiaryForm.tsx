@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { DiaryEntry } from "../../types";
 
 type Props = {
-  onSubmit: (entry: DiaryEntry) => void;
+  onSubmit: (entry: DiaryEntry) => Promise<void>;
   onCancel: () => void;
   initialData?: DiaryEntry;
 };
@@ -29,18 +29,26 @@ export default function DiaryForm({ onSubmit, onCancel, initialData }: Props) {
   const [food, setFood] = useState(initialData?.food ?? "");
   const [activity, setActivity] = useState(initialData?.activity ?? "");
   const [notes, setNotes] = useState(initialData?.notes ?? "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSubmit({
-      id: initialData?.id ?? `d-${Date.now()}`,
-      petId: "mimi-01",
-      date,
-      mood,
-      food: food.trim() || undefined,
-      activity: activity.trim() || undefined,
-      notes: notes.trim() || undefined,
-    });
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        id: initialData?.id ?? `d-${Date.now()}`,
+        petId: "mimi-01",
+        date,
+        mood,
+        food: food.trim() || undefined,
+        activity: activity.trim() || undefined,
+        notes: notes.trim() || undefined,
+      });
+    } catch {
+      // error toast shown by App.tsx; form stays open
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -107,11 +115,11 @@ export default function DiaryForm({ onSubmit, onCancel, initialData }: Props) {
       </FormField>
 
       <div className="flex gap-2 mt-4 justify-end">
-        <button type="button" onClick={onCancel} className="btn-secondary">
+        <button type="button" onClick={onCancel} disabled={isSubmitting} className="btn-secondary">
           Cancel
         </button>
-        <button type="submit" className="btn-primary">
-          {isEdit ? "Save Changes 🐾" : "Save Entry 🐾"}
+        <button type="submit" disabled={isSubmitting} className="btn-primary disabled:opacity-60">
+          {isSubmitting ? "Saving..." : isEdit ? "Save Changes 🐾" : "Save Entry 🐾"}
         </button>
       </div>
     </form>

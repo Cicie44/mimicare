@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Reminder } from "../../types";
 
 type Props = {
-  onSubmit: (reminder: Reminder) => void;
+  onSubmit: (reminder: Reminder) => Promise<void>;
   onCancel: () => void;
   initialData?: Reminder;
 };
@@ -20,23 +20,31 @@ export default function ReminderForm({ onSubmit, onCancel, initialData }: Props)
   const [dueDate, setDueDate] = useState(initialData?.dueDate ?? todayISO());
   const [notes, setNotes] = useState(initialData?.notes ?? "");
   const [titleError, setTitleError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) {
       setTitleError(true);
       return;
     }
     setTitleError(false);
-    onSubmit({
-      id: initialData?.id ?? `r-${Date.now()}`,
-      petId: "mimi-01",
-      title: title.trim(),
-      category,
-      dueDate,
-      status: initialData?.status ?? "pending",
-      notes: notes.trim() || undefined,
-    });
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        id: initialData?.id ?? `r-${Date.now()}`,
+        petId: "mimi-01",
+        title: title.trim(),
+        category,
+        dueDate,
+        status: initialData?.status ?? "pending",
+        notes: notes.trim() || undefined,
+      });
+    } catch {
+      // error toast shown by App.tsx; form stays open
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -97,11 +105,11 @@ export default function ReminderForm({ onSubmit, onCancel, initialData }: Props)
       </div>
 
       <div className="flex gap-2 justify-end">
-        <button type="button" onClick={onCancel} className="btn-secondary">
+        <button type="button" onClick={onCancel} disabled={isSubmitting} className="btn-secondary">
           Cancel
         </button>
-        <button type="submit" className="btn-primary">
-          {isEdit ? "Save Changes 🔔" : "Add Reminder 🔔"}
+        <button type="submit" disabled={isSubmitting} className="btn-primary disabled:opacity-60">
+          {isSubmitting ? "Saving..." : isEdit ? "Save Changes 🔔" : "Add Reminder 🔔"}
         </button>
       </div>
     </form>

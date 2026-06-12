@@ -1,6 +1,10 @@
 import type { VaccineRecord } from "../../types";
 
-type Props = { vaccine: VaccineRecord };
+type Props = {
+  vaccine: VaccineRecord;
+  onEdit?: () => void;
+  onDelete?: () => void;
+};
 
 function isUpcoming(dateStr?: string): boolean {
   if (!dateStr) return false;
@@ -22,10 +26,16 @@ function vaccineBadge(upcoming: boolean, overdue: boolean, hasDueDate: boolean) 
   return { label: "✅ Up to date", cls: "bg-green-100 text-green-600" };
 }
 
-export default function VaccineCard({ vaccine }: Props) {
+export default function VaccineCard({ vaccine, onEdit, onDelete }: Props) {
   const upcoming = isUpcoming(vaccine.nextDueDate);
   const overdue = isOverdue(vaccine.nextDueDate);
   const badge = vaccineBadge(upcoming, overdue, !!vaccine.nextDueDate);
+
+  function handleDelete() {
+    if (window.confirm("Delete this vaccine record? This cannot be undone.")) {
+      onDelete?.();
+    }
+  }
 
   return (
     <div className="card">
@@ -51,6 +61,27 @@ export default function VaccineCard({ vaccine }: Props) {
           <p className="text-gray-400 text-xs pt-1 border-t border-gray-50">{vaccine.notes}</p>
         )}
       </div>
+
+      {(onEdit || onDelete) && (
+        <div className="mt-3 pt-2 border-t border-gray-50 flex justify-end gap-3">
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="text-xs text-gray-300 hover:text-rose-400 font-medium transition-colors"
+            >
+              ✏️ Edit
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              className="text-xs text-gray-300 hover:text-red-400 font-medium transition-colors"
+            >
+              × Delete
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
