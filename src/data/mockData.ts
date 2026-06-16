@@ -1,4 +1,4 @@
-import type { Pet, VaccineRecord, Reminder, DiaryEntry, PetPhoto } from "../types";
+import type { Pet, VaccineRecord, Reminder, DiaryEntry } from "../types";
 
 export const mockPet: Pet = {
   id: "mimi-01",
@@ -141,53 +141,3 @@ export const mockDiary: DiaryEntry[] = [
   },
 ];
 
-export const mockPhotos: PetPhoto[] = [
-  {
-    id: "p-01",
-    petId: "mimi-01",
-    imageUrl: "https://placecats.com/300/300",
-    caption: "Sunday sunshine ☀️",
-    tags: ["sunbathing", "window", "cozy"],
-    date: "2026-06-07",
-  },
-  {
-    id: "p-02",
-    petId: "mimi-01",
-    imageUrl: "https://placecats.com/301/301",
-    caption: "Laptop assistant 💻",
-    tags: ["work", "cute", "helper"],
-    date: "2026-06-10",
-  },
-  {
-    id: "p-03",
-    petId: "mimi-01",
-    imageUrl: "https://placecats.com/302/302",
-    caption: "Post-nail trim sulking 😤",
-    tags: ["grumpy", "fluffy", "drama"],
-    date: "2026-06-08",
-  },
-  {
-    id: "p-04",
-    petId: "mimi-01",
-    imageUrl: "https://placecats.com/303/303",
-    caption: "Feather wand champion 🏆",
-    tags: ["play", "energetic", "zoom"],
-    date: "2026-06-11",
-  },
-  {
-    id: "p-05",
-    petId: "mimi-01",
-    imageUrl: "https://placecats.com/304/304",
-    caption: "Garden vibes 🌿",
-    tags: ["outdoor", "curious", "spring"],
-    date: "2026-05-20",
-  },
-  {
-    id: "p-06",
-    petId: "mimi-01",
-    imageUrl: "https://placecats.com/305/305",
-    caption: "Nap time is sacred 😴",
-    tags: ["sleep", "cozy", "peaceful"],
-    date: "2026-05-15",
-  },
-];

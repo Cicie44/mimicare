@@ -10,13 +10,14 @@ import VaccinesPage from "./pages/VaccinesPage";
 import RemindersPage from "./pages/RemindersPage";
 import GalleryPage from "./pages/GalleryPage";
 import DiaryPage from "./pages/DiaryPage";
-import { mockPet, mockPhotos } from "./data/mockData";
-import type { DiaryEntry, Pet, Reminder, VaccineRecord } from "./types";
+import { mockPet } from "./data/mockData";
+import type { DiaryEntry, Pet, PetPhoto, Reminder, VaccineRecord } from "./types";
 import * as diaryService from "./services/diaryService";
 import * as reminderService from "./services/reminderService";
 import * as petService from "./services/petService";
 import * as vaccineService from "./services/vaccineService";
 import * as authService from "./services/authService";
+import * as photoService from "./services/photoService";
 
 type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary";
 type Toast = { type: "success" | "error"; message: string };
@@ -33,6 +34,7 @@ export default function App() {
   const [vaccines, setVaccines] = useState<VaccineRecord[]>([]);
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [photos, setPhotos] = useState<PetPhoto[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -63,6 +65,7 @@ export default function App() {
       setDiary([]);
       setReminders([]);
       setVaccines([]);
+      setPhotos([]);
       setPage("home");
     }
   }, [user]);
@@ -81,15 +84,17 @@ export default function App() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [entries, rems, fetchedPet, vaxes] = await Promise.all([
+      const [entries, rems, fetchedPet, vaxes, fetchedPhotos] = await Promise.all([
         diaryService.fetchDiaryEntries(),
         reminderService.fetchReminders(),
         petService.fetchPet(),
         vaccineService.fetchVaccines(),
+        photoService.fetchPhotos(),
       ]);
       setDiary(entries);
       setReminders(rems);
       setVaccines(vaxes);
+      setPhotos(fetchedPhotos);
 
       if (fetchedPet) {
         setPet(fetchedPet);
@@ -121,6 +126,36 @@ export default function App() {
       await authService.signOut();
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  // ── Photos ───────────────────────────────────────────────────────────────────
+
+  async function addPhoto(file: File, caption: string, tags: string[], date: string): Promise<void> {
+    try {
+      const storagePath = await photoService.uploadPhoto(file, user!.id);
+      const created = await photoService.createPhotoRecord(
+        { petId: pet.id, storagePath, caption, tags, date },
+        user!.id
+      );
+      const signedUrl = await photoService.createSignedUrl(storagePath);
+      setPhotos((prev) => [{ ...created, signedUrl }, ...prev]);
+      showToast("success", "Photo uploaded! 📸");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to upload photo. Please try again.");
+      throw err;
+    }
+  }
+
+  async function removePhoto(photoId: string, storagePath: string): Promise<void> {
+    try {
+      await photoService.deletePhoto(photoId, storagePath);
+      setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+      showToast("success", "Photo deleted.");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to delete photo.");
     }
   }
 
@@ -349,7 +384,7 @@ export default function App() {
             vaccines={vaccines}
             reminders={reminders}
             diary={diary}
-            photos={mockPhotos}
+            photos={photos}
             onNavigate={setPage}
           />
         )}
@@ -375,7 +410,14 @@ export default function App() {
             onDelete={deleteReminder}
           />
         )}
-        {page === "gallery" && <GalleryPage photos={mockPhotos} />}
+        {page === "gallery" && (
+          <GalleryPage
+            photos={photos}
+            petId={pet.id}
+            onAdd={addPhoto}
+            onDelete={removePhoto}
+          />
+        )}
         {page === "diary" && (
           <DiaryPage
             entries={diary}

@@ -38,7 +38,7 @@ export default function ReminderForm({ onSubmit, onCancel, initialData, petId }:
         title: title.trim(),
         category,
         dueDate,
-        status: initialData?.status ?? "pending",
+        status: initialData?.status ?? (dueDate < todayISO() ? "overdue" : "pending"),
         notes: notes.trim() || undefined,
       });
     } catch {

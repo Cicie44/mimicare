@@ -46,7 +46,8 @@ export type DiaryEntry = {
 export type PetPhoto = {
   id: string;
   petId: string;
-  imageUrl: string;
+  storagePath: string;
+  signedUrl?: string;
   caption: string;
   tags: string[];
   date: string;

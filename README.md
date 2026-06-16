@@ -48,9 +48,13 @@ So I built MimiCare: a small, warm, focused app designed around one cat's life. 
 - Persisted in Supabase database
 
 ### 📸 Photo Gallery
-- Responsive grid of photo memory cards
-- Caption, tags, and date for each photo
-- Hover zoom effect
+- Upload photos directly from the browser (JPEG, PNG, WebP · max 5MB)
+- Preview before upload with file validation
+- Photos stored in a **private** Supabase Storage bucket — no public URLs
+- Display via signed URLs (expire in 1 hour, regenerated on each page load)
+- Delete photo with confirmation (removes from both DB and storage)
+- Responsive grid layout with caption, tags, and date
+- Empty state for new users
 
 ### 📖 Diary
 - Daily entries with mood, food, activity, and personal notes
@@ -110,7 +114,8 @@ src/
 │   ├── petService.ts      # Supabase upsert/fetch for pets
 │   ├── vaccineService.ts  # Supabase CRUD for vaccines
 │   ├── diaryService.ts    # Supabase CRUD for diary_entries
-│   └── reminderService.ts # Supabase CRUD for reminders
+│   ├── reminderService.ts # Supabase CRUD for reminders
+│   └── photoService.ts    # Supabase Storage upload + signed URLs + CRUD for photos
 ├── pages/
 │   ├── HomePage.tsx
 │   ├── PetProfilePage.tsx
@@ -121,8 +126,10 @@ src/
 ├── types/
 │   └── index.ts           # TypeScript types: Pet, VaccineRecord, Reminder, DiaryEntry, PetPhoto
 ├── components/
-│   └── auth/
-│       └── AuthPage.tsx       # Login / sign-up page
+│   ├── auth/
+│   │   └── AuthPage.tsx           # Login / sign-up page
+│   └── gallery/
+│       └── PhotoUploadForm.tsx    # Upload form with preview + validation
 ├── App.tsx                # Auth state, page routing, Supabase data loading, CRUD handlers
 └── main.tsx
 ```
@@ -238,8 +245,68 @@ create policy "Users manage own reminders"
   with check (auth.uid() = user_id);
 ```
 
+**6. Create the `photos` table**
+
+In the SQL editor, also run:
+
+```sql
+create table photos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) not null,
+  pet_id text not null,
+  storage_path text not null,
+  caption text not null,
+  tags text[] not null default '{}',
+  date date not null,
+  created_at timestamptz default now()
+);
+
+alter table photos enable row level security;
+
+create policy "Users manage own photos"
+  on photos for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+```
+
+**7. Create the `pet-photos` private storage bucket**
+
+In your Supabase project → Storage → Create bucket:
+- Name: `pet-photos`
+- Make sure **Public** is **OFF** (private bucket)
+
+Then in the SQL editor, add storage RLS policies:
+
+```sql
+-- Allow users to upload photos to their own folder (userId/filename)
+create policy "Users upload own photos"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'pet-photos'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Allow users to read their own photos (used for signed URLs)
+create policy "Users read own photos"
+  on storage.objects for select
+  using (
+    bucket_id = 'pet-photos'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Allow users to delete their own photos
+create policy "Users delete own photos"
+  on storage.objects for delete
+  using (
+    bucket_id = 'pet-photos'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+```
+
+> Photos are stored as `userId/timestamp-filename`. Signed URLs are generated server-side and expire after 1 hour — no public access to the bucket.
+
 ```bash
-# 6. Start the dev server
+# 8. Start the dev server
 npm run dev
 ```
 
@@ -272,11 +339,9 @@ npm run preview
 
 ## 📍 Current Status
 
-**Phase 4 — Supabase Auth + RLS (current)**
+**Phase 5 — Private Photo Upload (current)**
 
-Email/password authentication is fully integrated. Each user has their own isolated pet profile, vaccine records, diary entries, and reminders — enforced by Supabase Row Level Security policies. New users automatically get a default Mimi profile on first sign-in.
-
-UX: login/sign-up page with cute MimiCare styling, loading screen on session check, logout button in the navbar, success/error toasts for all CRUD operations. Photo gallery remains static mock data (planned for Phase 5 with Supabase Storage).
+Photo gallery is now fully real. Users upload photos directly from the browser; files are stored in a private Supabase Storage bucket (`pet-photos`) under a per-user folder. Images are served via signed URLs that expire in 1 hour — the bucket has no public access. Deleting a photo removes both the database record and the storage file.
 
 ---
 
@@ -306,11 +371,17 @@ Add, edit, delete diary entries and reminders. Data stored in `localStorage`.
 - Login and sign-up page with cute MimiCare styling
 - Session persistence across page refreshes
 - Each user's data isolated by `user_id` column + RLS policies
-- New users automatically initialized with a default Mimi pet profile
 - Logout button in the navbar
 
-### Phase 5 — Photo Upload & Extra Features
-- Photo upload via Supabase Storage
+### ✅ Phase 5 — Private Photo Upload (complete)
+- Photo upload via private Supabase Storage bucket
+- File validation: JPEG / PNG / WebP, max 5MB
+- Preview before upload
+- Display via signed URLs (1-hour expiry, no public access)
+- Delete removes both DB record and storage file
+- Storage RLS policies scoped to per-user folder
+
+### Phase 6 — Extra Features
 - Multi-pet support
 - Reminder notifications (browser push or email)
 - Calendar view for vaccines and appointments
