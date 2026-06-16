@@ -56,6 +56,14 @@ So I built MimiCare: a small, warm, focused app designed around one cat's life. 
 - Responsive grid layout with caption, tags, and date
 - Empty state for new users
 
+### 🎨 Meme Studio
+- Pick any photo from your gallery
+- Describe the mood or situation in plain text
+- AI generates 4 cute, cat-voiced meme captions via OpenAI (server-side — API key never exposed to client)
+- Click a caption to overlay it on the photo using HTML Canvas
+- Toggle caption position: top or bottom
+- Download the finished meme as a PNG
+
 ### 📖 Diary
 - Daily entries with mood, food, activity, and personal notes
 - Add, edit, delete diary entries
@@ -74,14 +82,18 @@ So I built MimiCare: a small, warm, focused app designed around one cat's life. 
 | [Vite](https://vitejs.dev/) | Fast dev server and bundler |
 | [Tailwind CSS v3](https://tailwindcss.com/) | Utility-first styling |
 | [Supabase](https://supabase.com/) | PostgreSQL database, Auth, and client |
+| [OpenAI API](https://platform.openai.com/) | Caption generation via gpt-4o-mini (server-side only) |
+| [Vercel](https://vercel.com/) | Hosting + serverless Edge Functions |
 
-Pet profile, vaccines, diary entries, and reminders are persisted in Supabase. User authentication uses Supabase Auth with email/password. Each user's data is isolated via Row Level Security (RLS). Photo gallery uses static mock data for now.
+Pet profile, vaccines, diary entries, reminders, and photos are fully persisted in Supabase. User authentication uses Supabase Auth with email/password. Each user's data is isolated via Row Level Security (RLS). Meme caption generation uses a Vercel Edge Function so the OpenAI API key stays server-side.
 
 ---
 
 ## 🗂 Project Structure
 
 ```
+api/
+└── generate-caption.ts    # Vercel Edge Function — calls OpenAI, keeps API key server-side
 src/
 ├── components/
 │   ├── home/
@@ -89,6 +101,8 @@ src/
 │   ├── layout/
 │   │   ├── Navbar.tsx
 │   │   └── Footer.tsx
+│   ├── auth/
+│   │   └── AuthPage.tsx               # Login / sign-up page
 │   ├── pet/
 │   │   ├── PetProfileCard.tsx
 │   │   └── PetForm.tsx
@@ -99,14 +113,15 @@ src/
 │   │   ├── ReminderCard.tsx
 │   │   └── ReminderForm.tsx
 │   ├── gallery/
-│   │   └── PhotoCard.tsx
+│   │   ├── PhotoCard.tsx
+│   │   └── PhotoUploadForm.tsx
 │   └── diary/
 │       ├── DiaryCard.tsx
 │       └── DiaryForm.tsx
 ├── data/
-│   └── mockData.ts        # Static mock data (pet, vaccines, photos)
+│   └── mockData.ts        # Static mock data (pet profile default)
 ├── hooks/
-│   └── useLocalStorage.ts # Retained for potential future use
+│   └── useLocalStorage.ts
 ├── lib/
 │   └── supabase.ts        # Supabase client instance
 ├── services/
@@ -122,16 +137,13 @@ src/
 │   ├── VaccinesPage.tsx
 │   ├── RemindersPage.tsx
 │   ├── GalleryPage.tsx
-│   └── DiaryPage.tsx
+│   ├── DiaryPage.tsx
+│   └── MemeStudioPage.tsx # Photo picker + AI caption generator + canvas download
 ├── types/
 │   └── index.ts           # TypeScript types: Pet, VaccineRecord, Reminder, DiaryEntry, PetPhoto
-├── components/
-│   ├── auth/
-│   │   └── AuthPage.tsx           # Login / sign-up page
-│   └── gallery/
-│       └── PhotoUploadForm.tsx    # Upload form with preview + validation
 ├── App.tsx                # Auth state, page routing, Supabase data loading, CRUD handlers
 └── main.tsx
+vercel.json                # Vercel build config (framework: vite)
 ```
 
 ---
@@ -305,8 +317,35 @@ create policy "Users delete own photos"
 
 > Photos are stored as `userId/timestamp-filename`. Signed URLs are generated server-side and expire after 1 hour — no public access to the bucket.
 
+**8. Set up OpenAI for Meme Studio**
+
+The Meme Studio page calls `/api/generate-caption`. In development, this is handled by a Vite dev-server middleware (in `vite.config.ts`). In production on Vercel, the same route is handled by `api/generate-caption.ts` (a Vercel serverless function). The `OPENAI_API_KEY` stays server-side in both cases — it is never sent to or accessible from the browser.
+
+Get a key at [platform.openai.com](https://platform.openai.com/) (gpt-4o-mini is used — very cheap per request).
+
+Add it to your `.env`:
+```
+OPENAI_API_KEY=sk-...
+```
+
+**Local development:**
+
 ```bash
-# 8. Start the dev server
+npm run dev
+```
+
+That's it — the Vite dev server loads `OPENAI_API_KEY` from `.env` and handles `/api/generate-caption` automatically. Open `http://localhost:5173`.
+
+**On Vercel (production):**
+
+Add `OPENAI_API_KEY` in your Vercel project → Settings → Environment Variables. The serverless function (`api/generate-caption.ts`) picks it up automatically on deploy.
+
+**9. (Optional) Configure Supabase Storage CORS for canvas**
+
+The Meme Studio canvas loads your photo using `crossOrigin="anonymous"`. Supabase Storage supports CORS by default, so this should work in most cases. If you see a canvas error, go to your Supabase project → Storage → CORS and add your domain (e.g., `http://localhost:3000`, `https://your-app.vercel.app`) as an allowed origin.
+
+```bash
+# 10. Start the dev server (without Meme Studio)
 npm run dev
 ```
 
@@ -339,9 +378,9 @@ npm run preview
 
 ## 📍 Current Status
 
-**Phase 5 — Private Photo Upload (current)**
+**Phase 6 — AI Meme Studio (current)**
 
-Photo gallery is now fully real. Users upload photos directly from the browser; files are stored in a private Supabase Storage bucket (`pet-photos`) under a per-user folder. Images are served via signed URLs that expire in 1 hour — the bucket has no public access. Deleting a photo removes both the database record and the storage file.
+Meme Studio is now live. Users pick any gallery photo, describe a mood or situation, and the app calls a Vercel Edge Function to generate 4 cute cat-voiced captions via OpenAI gpt-4o-mini. Selecting a caption renders it onto the photo using HTML Canvas with classic meme typography (Impact font, white text, black outline). Users can toggle caption position (top/bottom) and download the finished meme as a PNG. The `OPENAI_API_KEY` stays server-side — it is never sent to or accessible from the browser.
 
 ---
 
@@ -381,7 +420,16 @@ Add, edit, delete diary entries and reminders. Data stored in `localStorage`.
 - Delete removes both DB record and storage file
 - Storage RLS policies scoped to per-user folder
 
-### Phase 6 — Extra Features
+### ✅ Phase 6 — AI Meme Studio (complete)
+- Pick any gallery photo as the meme base
+- Describe mood/situation in plain text
+- AI generates 4 cute cat-voiced captions via OpenAI gpt-4o-mini (server-side Vercel Edge Function)
+- Click to overlay caption on photo with HTML Canvas (Impact font, white text, black outline)
+- Toggle text position: top or bottom
+- Download finished meme as PNG
+- `OPENAI_API_KEY` is server-side only — never exposed to client
+
+### Phase 7 — Extra Features
 - Multi-pet support
 - Reminder notifications (browser push or email)
 - Calendar view for vaccines and appointments

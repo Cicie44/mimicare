@@ -10,6 +10,7 @@ import VaccinesPage from "./pages/VaccinesPage";
 import RemindersPage from "./pages/RemindersPage";
 import GalleryPage from "./pages/GalleryPage";
 import DiaryPage from "./pages/DiaryPage";
+import MemeStudioPage from "./pages/MemeStudioPage";
 import { mockPet } from "./data/mockData";
 import type { DiaryEntry, Pet, PetPhoto, Reminder, VaccineRecord } from "./types";
 import * as diaryService from "./services/diaryService";
@@ -19,7 +20,7 @@ import * as vaccineService from "./services/vaccineService";
 import * as authService from "./services/authService";
 import * as photoService from "./services/photoService";
 
-type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary";
+type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme";
 type Toast = { type: "success" | "error"; message: string };
 
 export default function App() {
@@ -416,6 +417,12 @@ export default function App() {
             petId={pet.id}
             onAdd={addPhoto}
             onDelete={removePhoto}
+          />
+        )}
+        {page === "meme" && (
+          <MemeStudioPage
+            photos={photos}
+            onNavigateToGallery={() => setPage("gallery")}
           />
         )}
         {page === "diary" && (

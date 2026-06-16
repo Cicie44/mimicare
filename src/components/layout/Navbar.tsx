@@ -1,4 +1,4 @@
-type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary";
+type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme";
 
 type Props = {
   currentPage: Page;
@@ -14,6 +14,7 @@ const navLinks: { label: string; page: Page; emoji: string }[] = [
   { label: "Reminders", page: "reminders", emoji: "🔔" },
   { label: "Gallery", page: "gallery", emoji: "📸" },
   { label: "Diary", page: "diary", emoji: "📖" },
+  { label: "Meme Studio", page: "meme", emoji: "🎨" },
 ];
 
 export default function Navbar({ currentPage, onNavigate, userEmail, onLogout }: Props) {
