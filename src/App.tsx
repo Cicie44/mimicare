@@ -11,16 +11,18 @@ import RemindersPage from "./pages/RemindersPage";
 import GalleryPage from "./pages/GalleryPage";
 import DiaryPage from "./pages/DiaryPage";
 import MemeStudioPage from "./pages/MemeStudioPage";
+import ServiceRequestsPage from "./pages/ServiceRequestsPage";
 import { mockPet } from "./data/mockData";
-import type { DiaryEntry, Pet, PetPhoto, Reminder, VaccineRecord } from "./types";
+import type { DiaryEntry, Pet, PetPhoto, Reminder, ServiceRequest, ServiceRequestStatus, VaccineRecord, VisitChecklist, VisitReport } from "./types";
 import * as diaryService from "./services/diaryService";
 import * as reminderService from "./services/reminderService";
 import * as petService from "./services/petService";
 import * as vaccineService from "./services/vaccineService";
 import * as authService from "./services/authService";
 import * as photoService from "./services/photoService";
+import * as serviceRequestService from "./services/serviceRequestService";
 
-type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme";
+type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme" | "services";
 type Toast = { type: "success" | "error"; message: string };
 
 export default function App() {
@@ -36,6 +38,9 @@ export default function App() {
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [photos, setPhotos] = useState<PetPhoto[]>([]);
+  const [myRequests, setMyRequests] = useState<ServiceRequest[]>([]);
+  const [publicRequests, setPublicRequests] = useState<ServiceRequest[]>([]);
+  const [myJobs, setMyJobs] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -67,6 +72,9 @@ export default function App() {
       setReminders([]);
       setVaccines([]);
       setPhotos([]);
+      setMyRequests([]);
+      setPublicRequests([]);
+      setMyJobs([]);
       setPage("home");
     }
   }, [user]);
@@ -85,17 +93,23 @@ export default function App() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [entries, rems, fetchedPet, vaxes, fetchedPhotos] = await Promise.all([
+      const [entries, rems, fetchedPet, vaxes, fetchedPhotos, myReqs, pubReqs, jobs] = await Promise.all([
         diaryService.fetchDiaryEntries(),
         reminderService.fetchReminders(),
         petService.fetchPet(),
         vaccineService.fetchVaccines(),
         photoService.fetchPhotos(),
+        serviceRequestService.fetchMyRequests(userId),
+        serviceRequestService.fetchPublicRequests(userId),
+        serviceRequestService.fetchMyJobs(userId),
       ]);
       setDiary(entries);
       setReminders(rems);
       setVaccines(vaxes);
       setPhotos(fetchedPhotos);
+      setMyRequests(myReqs);
+      setPublicRequests(pubReqs);
+      setMyJobs(jobs);
 
       if (fetchedPet) {
         setPet(fetchedPet);
@@ -331,6 +345,106 @@ export default function App() {
     }
   }
 
+  // ── Service Requests ──────────────────────────────────────────────────────────
+
+  function updateInMyRequests(id: string, patch: Partial<ServiceRequest>) {
+    setMyRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+  function updateInMyJobs(id: string, patch: Partial<ServiceRequest>) {
+    setMyJobs((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+
+  async function addServiceRequest(req: ServiceRequest): Promise<void> {
+    try {
+      const created = await serviceRequestService.createServiceRequest(req, user!.id);
+      setMyRequests((prev) => [created, ...prev]);
+      showToast("success", "Request posted! 🏡");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to post request.");
+      throw err;
+    }
+  }
+
+  async function updateServiceRequest(req: ServiceRequest): Promise<void> {
+    try {
+      await serviceRequestService.updateServiceRequest(req);
+      updateInMyRequests(req.id, req);
+      showToast("success", "Request updated! 🐾");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to update request.");
+      throw err;
+    }
+  }
+
+  async function deleteServiceRequest(id: string): Promise<void> {
+    try {
+      await serviceRequestService.deleteServiceRequest(id);
+      setMyRequests((prev) => prev.filter((r) => r.id !== id));
+      showToast("success", "Request deleted.");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to delete request.");
+    }
+  }
+
+  async function cancelServiceRequest(id: string): Promise<void> {
+    try {
+      await serviceRequestService.updateStatus(id, "cancelled");
+      updateInMyRequests(id, { status: "cancelled" });
+      showToast("success", "Request cancelled.");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to cancel request.");
+    }
+  }
+
+  async function acceptServiceRequest(id: string): Promise<void> {
+    try {
+      const accepted = await serviceRequestService.acceptRequest(id, user!.id);
+      setPublicRequests((prev) => prev.filter((r) => r.id !== id));
+      setMyJobs((prev) => [accepted, ...prev]);
+      showToast("success", "You accepted the request! 🐾");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to accept request.");
+    }
+  }
+
+  async function handleChecklistToggle(id: string, checklist: VisitChecklist): Promise<void> {
+    try {
+      await serviceRequestService.updateChecklist(id, checklist);
+      updateInMyJobs(id, { checklist });
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to update checklist.");
+    }
+  }
+
+  async function handleSaveReport(id: string, report: VisitReport): Promise<void> {
+    try {
+      await serviceRequestService.saveVisitReport(id, report);
+      updateInMyJobs(id, { visitReport: report, status: "completed" });
+      showToast("success", "Visit report saved! ✅");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to save visit report.");
+      throw err;
+    }
+  }
+
+  async function handleServiceStatusUpdate(id: string, status: ServiceRequestStatus): Promise<void> {
+    try {
+      await serviceRequestService.updateStatus(id, status);
+      updateInMyJobs(id, { status });
+      showToast("success", `Status updated to ${status.replace("_", " ")}!`);
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to update status.");
+    }
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   // Checking auth session on startup
@@ -432,6 +546,22 @@ export default function App() {
             onAdd={addDiaryEntry}
             onUpdate={updateDiaryEntry}
             onDelete={deleteDiaryEntry}
+          />
+        )}
+        {page === "services" && (
+          <ServiceRequestsPage
+            myRequests={myRequests}
+            publicRequests={publicRequests}
+            myJobs={myJobs}
+            petId={pet.id}
+            onAdd={addServiceRequest}
+            onUpdate={updateServiceRequest}
+            onDelete={deleteServiceRequest}
+            onCancel={cancelServiceRequest}
+            onAccept={acceptServiceRequest}
+            onChecklistToggle={handleChecklistToggle}
+            onSaveReport={handleSaveReport}
+            onUpdateStatus={handleServiceStatusUpdate}
           />
         )}
       </>

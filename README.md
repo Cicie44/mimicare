@@ -71,6 +71,17 @@ So I built MimiCare: a small, warm, focused app designed around one cat's life. 
 - Mood frequency summary overview
 - Persisted in Supabase database
 
+### 🏡 Pet Sitting & Feeding — Community Marketplace
+- **Owner** posts a service request (service type, date/time, duration, area, public description)
+- **Community** tab shows open requests from other users — sensitive details (home access, emergency contact, care instructions) are hidden until accepted
+- Any logged-in user can **accept** an open request and become the sitter
+- **My Jobs** tab: accepted sitter can start the visit, tick the checklist live, and submit a visit report to mark it complete
+- Status workflow: **Open → Accepted → In Progress → Completed** (owner can cancel at Open or Accepted)
+- Interactive visit checklist: feed pet, refill water, clean litter, play/comfort pet, send update
+- Post-visit report: arrival/departure time, tasks completed, pet mood, notes
+- Privacy enforced in UI: public view never exposes private home or contact details
+- Persisted in Supabase with multi-policy RLS (owner, sitter, public-read-open, accept)
+
 ---
 
 ## 🛠 Tech Stack
@@ -115,9 +126,13 @@ src/
 │   ├── gallery/
 │   │   ├── PhotoCard.tsx
 │   │   └── PhotoUploadForm.tsx
-│   └── diary/
-│       ├── DiaryCard.tsx
-│       └── DiaryForm.tsx
+│   ├── diary/
+│   │   ├── DiaryCard.tsx
+│   │   └── DiaryForm.tsx
+│   └── services/
+│       ├── ServiceRequestCard.tsx  # Card with checklist, report, status actions
+│       ├── ServiceRequestForm.tsx  # Create / edit form
+│       └── VisitReportForm.tsx     # Post-visit report form
 ├── data/
 │   └── mockData.ts        # Static mock data (pet profile default)
 ├── hooks/
@@ -129,8 +144,9 @@ src/
 │   ├── petService.ts      # Supabase upsert/fetch for pets
 │   ├── vaccineService.ts  # Supabase CRUD for vaccines
 │   ├── diaryService.ts    # Supabase CRUD for diary_entries
-│   ├── reminderService.ts # Supabase CRUD for reminders
-│   └── photoService.ts    # Supabase Storage upload + signed URLs + CRUD for photos
+│   ├── reminderService.ts        # Supabase CRUD for reminders
+│   ├── photoService.ts           # Supabase Storage upload + signed URLs + CRUD for photos
+│   └── serviceRequestService.ts  # Supabase CRUD + checklist/report helpers for service_requests
 ├── pages/
 │   ├── HomePage.tsx
 │   ├── PetProfilePage.tsx
@@ -138,9 +154,10 @@ src/
 │   ├── RemindersPage.tsx
 │   ├── GalleryPage.tsx
 │   ├── DiaryPage.tsx
-│   └── MemeStudioPage.tsx # Photo picker + AI caption generator + canvas download
+│   ├── MemeStudioPage.tsx        # Photo picker + AI caption generator + canvas download
+│   └── ServiceRequestsPage.tsx   # Pet sitting / feeding service requests with tabs
 ├── types/
-│   └── index.ts           # TypeScript types: Pet, VaccineRecord, Reminder, DiaryEntry, PetPhoto
+│   └── index.ts           # TypeScript types: Pet, VaccineRecord, Reminder, DiaryEntry, PetPhoto, ServiceRequest
 ├── App.tsx                # Auth state, page routing, Supabase data loading, CRUD handlers
 └── main.tsx
 vercel.json                # Vercel build config (framework: vite)
@@ -257,7 +274,68 @@ create policy "Users manage own reminders"
   with check (auth.uid() = user_id);
 ```
 
-**6. Create the `photos` table**
+**6. Create the `service_requests` table**
+
+```sql
+drop table if exists service_requests;
+
+create table service_requests (
+  id uuid primary key default gen_random_uuid(),
+  owner_user_id uuid references auth.users(id) not null,
+  sitter_user_id uuid references auth.users(id),
+  pet_id text not null,
+  service_type text not null,
+  visit_date date not null,
+  visit_time text not null,
+  duration_minutes integer not null default 60,
+  area text,
+  public_description text,
+  care_instructions text,
+  home_access_notes text,
+  emergency_contact_name text not null,
+  emergency_contact_phone text not null,
+  status text not null default 'open',
+  checklist jsonb not null default '{"feedPet":false,"refillWater":false,"cleanLitter":false,"playComfortPet":false,"sendUpdate":false}',
+  visit_report jsonb,
+  created_at timestamptz default now()
+);
+
+alter table service_requests enable row level security;
+
+-- Owner: full access to own requests
+create policy "Owner full access"
+  on service_requests for all
+  using (auth.uid() = owner_user_id)
+  with check (auth.uid() = owner_user_id);
+
+-- Any authenticated user can read open requests from others (public marketplace)
+create policy "Public read open requests"
+  on service_requests for select
+  using (status = 'open' and owner_user_id != auth.uid());
+
+-- Accepted sitter can read their jobs
+create policy "Sitter read jobs"
+  on service_requests for select
+  using (auth.uid() = sitter_user_id);
+
+-- Accepted sitter can update their jobs (checklist, report, status)
+create policy "Sitter update jobs"
+  on service_requests for update
+  using (auth.uid() = sitter_user_id)
+  with check (auth.uid() = sitter_user_id);
+
+-- Any authenticated user can accept an open request (become the sitter)
+create policy "Accept open request"
+  on service_requests for update
+  using (status = 'open' and owner_user_id != auth.uid() and sitter_user_id is null)
+  with check (sitter_user_id = auth.uid() and status = 'accepted');
+
+notify pgrst, 'reload schema';
+```
+
+> **RLS notes:** Five policies govern access — the owner has full CRUD, any user can read open requests from others, the accepted sitter can read and update their jobs, and a dedicated accept policy ensures only the sitter can claim an open slot (preventing self-accept and double-accept).
+
+**7. Create the `photos` table**
 
 In the SQL editor, also run:
 

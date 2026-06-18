@@ -1,4 +1,6 @@
-type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme";
+import { useState, useRef, useEffect } from "react";
+
+type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme" | "services";
 
 type Props = {
   currentPage: Page;
@@ -7,15 +9,123 @@ type Props = {
   onLogout?: () => void;
 };
 
-const navLinks: { label: string; page: Page; emoji: string }[] = [
+type NavGroup = {
+  label: string;
+  emoji: string;
+  pages: { label: string; page: Page; emoji: string }[];
+};
+
+const standaloneLinks: { label: string; page: Page; emoji: string }[] = [
   { label: "Home", page: "home", emoji: "🏠" },
   { label: "Profile", page: "profile", emoji: "🐱" },
-  { label: "Vaccines", page: "vaccines", emoji: "💉" },
-  { label: "Reminders", page: "reminders", emoji: "🔔" },
-  { label: "Gallery", page: "gallery", emoji: "📸" },
-  { label: "Diary", page: "diary", emoji: "📖" },
-  { label: "Meme Studio", page: "meme", emoji: "🎨" },
 ];
+
+const navGroups: NavGroup[] = [
+  {
+    label: "Health",
+    emoji: "🏥",
+    pages: [
+      { label: "Vaccines", page: "vaccines", emoji: "💉" },
+      { label: "Reminders", page: "reminders", emoji: "🔔" },
+    ],
+  },
+  {
+    label: "Memories",
+    emoji: "📸",
+    pages: [
+      { label: "Gallery", page: "gallery", emoji: "📷" },
+      { label: "Diary", page: "diary", emoji: "📖" },
+      { label: "Meme Studio", page: "meme", emoji: "🎨" },
+    ],
+  },
+  {
+    label: "Services",
+    emoji: "🏡",
+    pages: [
+      { label: "Pet Sitting", page: "services", emoji: "🐾" },
+    ],
+  },
+];
+
+function DropdownGroup({
+  group,
+  currentPage,
+  onNavigate,
+}: {
+  group: NavGroup;
+  currentPage: Page;
+  onNavigate: (page: Page) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<number | null>(null);
+
+  const isActive = group.pages.some((p) => p.page === currentPage);
+
+  function openMenu() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setOpen(true);
+  }
+
+  function scheduleClose() {
+    timerRef.current = window.setTimeout(() => setOpen(false), 120);
+  }
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div
+      ref={ref}
+      className="relative"
+      onMouseEnter={openMenu}
+      onMouseLeave={scheduleClose}
+    >
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
+          isActive
+            ? "bg-rose-100 text-rose-600"
+            : "text-gray-500 hover:bg-orange-50 hover:text-rose-400"
+        }`}
+      >
+        <span>{group.emoji}</span>
+        <span className="hidden sm:inline">{group.label}</span>
+        <span className="text-[10px] opacity-60">▾</span>
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1 bg-white border border-orange-100 rounded-2xl shadow-lg py-1.5 min-w-[140px] z-50">
+          {group.pages.map(({ label, page, emoji }) => (
+            <button
+              key={page}
+              onClick={() => { onNavigate(page); setOpen(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors ${
+                currentPage === page
+                  ? "text-rose-500 bg-rose-50"
+                  : "text-gray-600 hover:bg-orange-50 hover:text-rose-400"
+              }`}
+            >
+              <span>{emoji}</span>
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Navbar({ currentPage, onNavigate, userEmail, onLogout }: Props) {
   return (
@@ -29,20 +139,29 @@ export default function Navbar({ currentPage, onNavigate, userEmail, onLogout }:
           <span>MimiCare</span>
         </button>
 
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-nowrap">
-          {navLinks.map(({ label, page, emoji }) => (
+        <div className="flex items-center gap-1">
+          {standaloneLinks.map(({ label, page, emoji }) => (
             <button
               key={page}
               onClick={() => onNavigate(page)}
-              className={`flex-shrink-0 px-2.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
                 currentPage === page
                   ? "bg-rose-100 text-rose-600"
                   : "text-gray-500 hover:bg-orange-50 hover:text-rose-400"
               }`}
             >
-              <span className="mr-0.5 sm:mr-1">{emoji}</span>
+              <span>{emoji}</span>
               <span className="hidden sm:inline">{label}</span>
             </button>
+          ))}
+
+          {navGroups.map((group) => (
+            <DropdownGroup
+              key={group.label}
+              group={group}
+              currentPage={currentPage}
+              onNavigate={onNavigate}
+            />
           ))}
         </div>
 

@@ -52,3 +52,49 @@ export type PetPhoto = {
   tags: string[];
   date: string;
 };
+
+export type ServiceRequestStatus =
+  | "open"
+  | "accepted"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+
+export type VisitChecklist = {
+  feedPet: boolean;
+  refillWater: boolean;
+  cleanLitter: boolean;
+  playComfortPet: boolean;
+  sendUpdate: boolean;
+};
+
+export type VisitReport = {
+  arrivalTime: string;
+  departureTime: string;
+  foodGiven: boolean;
+  waterRefilled: boolean;
+  litterCleaned: boolean;
+  petMood: string;
+  notes?: string;
+};
+
+export type ServiceRequest = {
+  id: string;
+  ownerUserId: string;
+  sitterUserId?: string;
+  petId: string;
+  serviceType: string;
+  visitDate: string;
+  visitTime: string;
+  durationMinutes: number;
+  area?: string;
+  publicDescription?: string;
+  careInstructions?: string;
+  homeAccessNotes?: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  status: ServiceRequestStatus;
+  checklist: VisitChecklist;
+  visitReport?: VisitReport;
+  createdAt?: string;
+};
