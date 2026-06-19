@@ -13,7 +13,7 @@ import DiaryPage from "./pages/DiaryPage";
 import MemeStudioPage from "./pages/MemeStudioPage";
 import ServiceRequestsPage from "./pages/ServiceRequestsPage";
 import { mockPet } from "./data/mockData";
-import type { DiaryEntry, Pet, PetPhoto, Reminder, ServiceRequest, ServiceRequestStatus, VaccineRecord, VisitChecklist, VisitReport } from "./types";
+import type { Application, AppNotification, DiaryEntry, Pet, PetPhoto, Reminder, Review, ServiceRequest, ServiceRequestStatus, SitterProfile, VaccineRecord, VisitChecklist, VisitReport } from "./types";
 import * as diaryService from "./services/diaryService";
 import * as reminderService from "./services/reminderService";
 import * as petService from "./services/petService";
@@ -21,6 +21,10 @@ import * as vaccineService from "./services/vaccineService";
 import * as authService from "./services/authService";
 import * as photoService from "./services/photoService";
 import * as serviceRequestService from "./services/serviceRequestService";
+import * as applicationService from "./services/applicationService";
+import * as reviewService from "./services/reviewService";
+import * as notificationService from "./services/notificationService";
+import * as sitterProfileService from "./services/sitterProfileService";
 
 type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme" | "services";
 type Toast = { type: "success" | "error"; message: string };
@@ -41,6 +45,11 @@ export default function App() {
   const [myRequests, setMyRequests] = useState<ServiceRequest[]>([]);
   const [publicRequests, setPublicRequests] = useState<ServiceRequest[]>([]);
   const [myJobs, setMyJobs] = useState<ServiceRequest[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [myApplications, setMyApplications] = useState<Application[]>([]);
+  const [reviewsGiven, setReviewsGiven] = useState<Review[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -75,6 +84,11 @@ export default function App() {
       setMyRequests([]);
       setPublicRequests([]);
       setMyJobs([]);
+      setApplications([]);
+      setMyApplications([]);
+      setReviewsGiven([]);
+      setNotifications([]);
+      setSitterProfile(null);
       setPage("home");
     }
   }, [user]);
@@ -93,7 +107,11 @@ export default function App() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [entries, rems, fetchedPet, vaxes, fetchedPhotos, myReqs, pubReqs, jobs] = await Promise.all([
+      const [
+        entries, rems, fetchedPet, vaxes, fetchedPhotos,
+        myReqs, pubReqs, jobs,
+        apps, myApps, revs, notifs, profile,
+      ] = await Promise.all([
         diaryService.fetchDiaryEntries(),
         reminderService.fetchReminders(),
         petService.fetchPet(),
@@ -102,6 +120,11 @@ export default function App() {
         serviceRequestService.fetchMyRequests(userId),
         serviceRequestService.fetchPublicRequests(userId),
         serviceRequestService.fetchMyJobs(userId),
+        applicationService.fetchApplicationsForMyRequests(userId),
+        applicationService.fetchMyApplications(userId),
+        reviewService.fetchReviewsGiven(userId),
+        notificationService.fetchNotifications(userId),
+        sitterProfileService.fetchProfile(userId),
       ]);
       setDiary(entries);
       setReminders(rems);
@@ -110,6 +133,11 @@ export default function App() {
       setMyRequests(myReqs);
       setPublicRequests(pubReqs);
       setMyJobs(jobs);
+      setApplications(apps);
+      setMyApplications(myApps);
+      setReviewsGiven(revs);
+      setNotifications(notifs);
+      setSitterProfile(profile);
 
       if (fetchedPet) {
         setPet(fetchedPet);
@@ -400,15 +428,167 @@ export default function App() {
     }
   }
 
-  async function acceptServiceRequest(id: string): Promise<void> {
+  // ── Phase 8: Applications ─────────────────────────────────────────────────────
+
+  async function handleApply(requestId: string, message: string): Promise<void> {
     try {
-      const accepted = await serviceRequestService.acceptRequest(id, user!.id);
-      setPublicRequests((prev) => prev.filter((r) => r.id !== id));
-      setMyJobs((prev) => [accepted, ...prev]);
-      showToast("success", "You accepted the request! 🐾");
+      const app = await applicationService.applyToRequest(requestId, message, user!.id);
+      setMyApplications((prev) => [app, ...prev]);
+      // notify the request owner
+      const req = publicRequests.find((r) => r.id === requestId);
+      if (req) {
+        await notificationService.createNotification(
+          req.ownerUserId,
+          "new_application",
+          `🙋 ${sitterProfile?.displayName ?? "Someone"} applied to your ${req.serviceType} request`,
+          requestId
+        );
+      }
+      showToast("success", "Application sent! 🐾");
     } catch (err) {
       console.error(err);
-      showToast("error", "Failed to accept request.");
+      showToast("error", "Failed to send application.");
+      throw err;
+    }
+  }
+
+  async function handleAcceptApplicant(
+    requestId: string,
+    applicationId: string,
+    applicantUserId: string
+  ): Promise<void> {
+    try {
+      await applicationService.acceptApplication(requestId, applicationId, applicantUserId);
+      // Update local state: request moves to accepted, applications updated
+      updateInMyRequests(requestId, { status: "accepted", sitterUserId: applicantUserId });
+      setApplications((prev) =>
+        prev.map((a) =>
+          a.requestId === requestId
+            ? { ...a, status: a.id === applicationId ? "accepted" : "declined" }
+            : a
+        )
+      );
+      // Notify accepted applicant
+      await notificationService.createNotification(
+        applicantUserId,
+        "application_accepted",
+        `✅ Your application was accepted! Check your jobs to get started.`,
+        requestId
+      );
+      // Notify declined applicants
+      const declined = applications.filter(
+        (a) => a.requestId === requestId && a.id !== applicationId && a.status === "pending"
+      );
+      await Promise.all(
+        declined.map((a) =>
+          notificationService.createNotification(
+            a.applicantUserId,
+            "application_declined",
+            `Your application was not selected this time.`,
+            requestId
+          )
+        )
+      );
+      showToast("success", "Applicant accepted! ✅");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to accept applicant.");
+    }
+  }
+
+  async function handleDeclineApplicant(
+    applicationId: string,
+    applicantUserId: string
+  ): Promise<void> {
+    try {
+      await applicationService.declineApplication(applicationId);
+      setApplications((prev) =>
+        prev.map((a) => (a.id === applicationId ? { ...a, status: "declined" as const } : a))
+      );
+      await notificationService.createNotification(
+        applicantUserId,
+        "application_declined",
+        `Your application was not selected this time.`
+      );
+      showToast("success", "Application declined.");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to decline application.");
+    }
+  }
+
+  // ── Phase 8: Reviews ──────────────────────────────────────────────────────────
+
+  async function handleReview(
+    requestId: string,
+    sitterUserId: string,
+    rating: number,
+    comment?: string
+  ): Promise<void> {
+    try {
+      const review = await reviewService.submitReview(requestId, sitterUserId, user!.id, rating, comment);
+      setReviewsGiven((prev) => [review, ...prev]);
+      await notificationService.createNotification(
+        sitterUserId,
+        "new_review",
+        `⭐ You received a ${rating}-star review!`,
+        requestId
+      );
+      showToast("success", "Review submitted! ⭐");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to submit review.");
+      throw err;
+    }
+  }
+
+  // ── Phase 8: Sitter Profile ───────────────────────────────────────────────────
+
+  async function handleSaveProfile(
+    profile: Omit<SitterProfile, "completedVisitsCount" | "averageRating" | "reviewCount">
+  ): Promise<void> {
+    try {
+      const saved = await sitterProfileService.upsertProfile(profile, user!.id);
+      setSitterProfile(saved);
+      showToast("success", "Profile saved! 🐾");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to save profile.");
+      throw err;
+    }
+  }
+
+  // ── Phase 8: Notifications ────────────────────────────────────────────────────
+
+  function handleMarkNotificationRead(id: string) {
+    notificationService.markAsRead(id).catch(console.error);
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  }
+
+  function handleMarkAllNotificationsRead() {
+    notificationService.markAllAsRead(user!.id).catch(console.error);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  }
+
+  async function handleSaveReport(id: string, report: VisitReport): Promise<void> {
+    try {
+      await serviceRequestService.saveVisitReport(id, report);
+      updateInMyJobs(id, { visitReport: report, status: "completed" });
+      // notify request owner
+      const job = myJobs.find((r) => r.id === id);
+      if (job) {
+        await notificationService.createNotification(
+          job.ownerUserId,
+          "visit_completed",
+          `🎉 Your sitter completed the ${job.serviceType} visit!`,
+          id
+        );
+      }
+      showToast("success", "Visit report saved! ✅");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to save visit report.");
+      throw err;
     }
   }
 
@@ -419,18 +599,6 @@ export default function App() {
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to update checklist.");
-    }
-  }
-
-  async function handleSaveReport(id: string, report: VisitReport): Promise<void> {
-    try {
-      await serviceRequestService.saveVisitReport(id, report);
-      updateInMyJobs(id, { visitReport: report, status: "completed" });
-      showToast("success", "Visit report saved! ✅");
-    } catch (err) {
-      console.error(err);
-      showToast("error", "Failed to save visit report.");
-      throw err;
     }
   }
 
@@ -554,14 +722,22 @@ export default function App() {
             publicRequests={publicRequests}
             myJobs={myJobs}
             petId={pet.id}
+            applications={applications}
+            myApplications={myApplications}
+            reviewsGiven={reviewsGiven}
+            sitterProfile={sitterProfile}
             onAdd={addServiceRequest}
             onUpdate={updateServiceRequest}
             onDelete={deleteServiceRequest}
             onCancel={cancelServiceRequest}
-            onAccept={acceptServiceRequest}
+            onApply={handleApply}
+            onAcceptApplicant={handleAcceptApplicant}
+            onDeclineApplicant={handleDeclineApplicant}
             onChecklistToggle={handleChecklistToggle}
             onSaveReport={handleSaveReport}
             onUpdateStatus={handleServiceStatusUpdate}
+            onReview={handleReview}
+            onSaveProfile={handleSaveProfile}
           />
         )}
       </>
@@ -575,6 +751,9 @@ export default function App() {
         onNavigate={setPage}
         userEmail={user.email}
         onLogout={handleLogout}
+        notifications={notifications}
+        onMarkNotificationRead={handleMarkNotificationRead}
+        onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
       />
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
         {renderContent()}

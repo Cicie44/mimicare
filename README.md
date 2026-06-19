@@ -73,14 +73,16 @@ So I built MimiCare: a small, warm, focused app designed around one cat's life. 
 
 ### 🏡 Pet Sitting & Feeding — Community Marketplace
 - **Owner** posts a service request (service type, date/time, duration, area, public description)
-- **Community** tab shows open requests from other users — sensitive details (home access, emergency contact, care instructions) are hidden until accepted
-- Any logged-in user can **accept** an open request and become the sitter
+- **Community** tab shows open requests from other users — sensitive details hidden until accepted
+- Users **apply** with a short message instead of instantly claiming a slot
+- Owner reviews applicants, accepts one (others are auto-declined), sitter is then assigned
+- **Sitter Profiles**: display name, bio, area, cat/dog experience, available days, preferred services
+- Trust badges derived from real data: completed visit count, top-rated badge (≥ 4.5 avg, ≥ 3 reviews)
+- **Reviews**: owner can leave a 1–5 star rating + comment after completion; shown on sitter's profile; one review per request enforced by unique DB constraint
+- **In-app notifications**: new application, accepted/declined, visit completed, new review — bell icon in navbar with unread count badge and mark-all-read
 - **My Jobs** tab: accepted sitter can start the visit, tick the checklist live, and submit a visit report to mark it complete
 - Status workflow: **Open → Accepted → In Progress → Completed** (owner can cancel at Open or Accepted)
-- Interactive visit checklist: feed pet, refill water, clean litter, play/comfort pet, send update
-- Post-visit report: arrival/departure time, tasks completed, pet mood, notes
-- Privacy enforced in UI: public view never exposes private home or contact details
-- Persisted in Supabase with multi-policy RLS (owner, sitter, public-read-open, accept)
+- Privacy enforced at both DB level (split table) and UI level (role-based field rendering)
 
 ---
 
@@ -274,11 +276,16 @@ create policy "Users manage own reminders"
   with check (auth.uid() = user_id);
 ```
 
-**6. Create the `service_requests` table**
+**6. Create the `service_requests` and `service_request_private_details` tables**
+
+Sensitive fields (care instructions, home access, emergency contact, checklist, visit report) live in a separate private table. Public marketplace queries never touch it — only the owner and the accepted sitter can read or write it via RLS.
 
 ```sql
+-- Drop existing tables if re-running
+drop table if exists service_request_private_details;
 drop table if exists service_requests;
 
+-- Public fields only — visible to any authenticated user for open requests
 create table service_requests (
   id uuid primary key default gen_random_uuid(),
   owner_user_id uuid references auth.users(id) not null,
@@ -290,52 +297,185 @@ create table service_requests (
   duration_minutes integer not null default 60,
   area text,
   public_description text,
-  care_instructions text,
-  home_access_notes text,
-  emergency_contact_name text not null,
-  emergency_contact_phone text not null,
   status text not null default 'open',
-  checklist jsonb not null default '{"feedPet":false,"refillWater":false,"cleanLitter":false,"playComfortPet":false,"sendUpdate":false}',
-  visit_report jsonb,
   created_at timestamptz default now()
 );
 
 alter table service_requests enable row level security;
 
--- Owner: full access to own requests
 create policy "Owner full access"
   on service_requests for all
   using (auth.uid() = owner_user_id)
   with check (auth.uid() = owner_user_id);
 
--- Any authenticated user can read open requests from others (public marketplace)
 create policy "Public read open requests"
   on service_requests for select
   using (status = 'open' and owner_user_id != auth.uid());
 
--- Accepted sitter can read their jobs
 create policy "Sitter read jobs"
   on service_requests for select
   using (auth.uid() = sitter_user_id);
 
--- Accepted sitter can update their jobs (checklist, report, status)
 create policy "Sitter update jobs"
   on service_requests for update
   using (auth.uid() = sitter_user_id)
   with check (auth.uid() = sitter_user_id);
 
--- Any authenticated user can accept an open request (become the sitter)
 create policy "Accept open request"
   on service_requests for update
   using (status = 'open' and owner_user_id != auth.uid() and sitter_user_id is null)
   with check (sitter_user_id = auth.uid() and status = 'accepted');
 
+-- Private fields — only the owner and the accepted sitter can access
+create table service_request_private_details (
+  request_id uuid primary key references service_requests(id) on delete cascade,
+  care_instructions text,
+  home_access_notes text,
+  emergency_contact_name text not null,
+  emergency_contact_phone text not null,
+  checklist jsonb not null default '{"feedPet":false,"refillWater":false,"cleanLitter":false,"playComfortPet":false,"sendUpdate":false}',
+  visit_report jsonb
+);
+
+alter table service_request_private_details enable row level security;
+
+create policy "Owner read private"
+  on service_request_private_details for select
+  using (exists (select 1 from service_requests where id = request_id and owner_user_id = auth.uid()));
+
+create policy "Owner insert private"
+  on service_request_private_details for insert
+  with check (exists (select 1 from service_requests where id = request_id and owner_user_id = auth.uid()));
+
+create policy "Owner update private"
+  on service_request_private_details for update
+  using (exists (select 1 from service_requests where id = request_id and owner_user_id = auth.uid()));
+
+create policy "Sitter read private"
+  on service_request_private_details for select
+  using (exists (select 1 from service_requests where id = request_id and sitter_user_id = auth.uid()));
+
+create policy "Sitter update private"
+  on service_request_private_details for update
+  using (exists (select 1 from service_requests where id = request_id and sitter_user_id = auth.uid()));
+
 notify pgrst, 'reload schema';
 ```
 
-> **RLS notes:** Five policies govern access — the owner has full CRUD, any user can read open requests from others, the accepted sitter can read and update their jobs, and a dedicated accept policy ensures only the sitter can claim an open slot (preventing self-accept and double-accept).
+> **Privacy model:** `service_requests` holds only public fields and is readable by any authenticated user for open requests. `service_request_private_details` is a 1:1 child table protected by 5 separate RLS policies — the owner has insert/read/update, the accepted sitter has read/update. Public marketplace queries select only named public columns and never join the private table, so sensitive data cannot leak even indirectly.
 
-**7. Create the `photos` table**
+**7. Create Phase 8 community tables**
+
+```sql
+-- Sitter public profiles
+create table sitter_profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null,
+  bio text,
+  area text,
+  has_cat_experience boolean not null default true,
+  has_dog_experience boolean not null default false,
+  available_days text[] not null default '{}',
+  preferred_service_types text[] not null default '{}'
+);
+
+alter table sitter_profiles enable row level security;
+
+create policy "Anyone can read sitter profiles"
+  on sitter_profiles for select using (true);
+
+create policy "Users manage own sitter profile"
+  on sitter_profiles for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- Applications to open requests
+create table applications (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid references service_requests(id) on delete cascade not null,
+  applicant_user_id uuid references auth.users(id) not null,
+  message text not null,
+  status text not null default 'pending',
+  created_at timestamptz default now(),
+  unique(request_id, applicant_user_id)
+);
+
+alter table applications enable row level security;
+
+create policy "Applicant reads own applications"
+  on applications for select using (auth.uid() = applicant_user_id);
+
+create policy "Applicant inserts own application"
+  on applications for insert
+  with check (
+    auth.uid() = applicant_user_id
+    and not exists (
+      select 1 from service_requests where id = request_id and owner_user_id = auth.uid()
+    )
+  );
+
+create policy "Owner reads applications on own requests"
+  on applications for select
+  using (exists (select 1 from service_requests where id = request_id and owner_user_id = auth.uid()));
+
+create policy "Owner updates application status"
+  on applications for update
+  using (exists (select 1 from service_requests where id = request_id and owner_user_id = auth.uid()));
+
+-- Reviews (one per completed request)
+create table reviews (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid references service_requests(id) on delete cascade not null unique,
+  sitter_user_id uuid references auth.users(id) not null,
+  owner_user_id uuid references auth.users(id) not null,
+  rating integer not null check (rating between 1 and 5),
+  comment text,
+  created_at timestamptz default now()
+);
+
+alter table reviews enable row level security;
+
+create policy "Anyone can read reviews"
+  on reviews for select using (true);
+
+create policy "Owner submits review for completed request"
+  on reviews for insert
+  with check (
+    auth.uid() = owner_user_id
+    and exists (
+      select 1 from service_requests
+      where id = request_id and owner_user_id = auth.uid() and status = 'completed'
+    )
+  );
+
+-- In-app notifications
+create table notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  type text not null,
+  request_id uuid references service_requests(id) on delete set null,
+  message text not null,
+  read boolean not null default false,
+  created_at timestamptz default now()
+);
+
+alter table notifications enable row level security;
+
+create policy "Users read own notifications"
+  on notifications for select using (auth.uid() = user_id);
+
+create policy "Authenticated users create notifications"
+  on notifications for insert with check (auth.uid() is not null);
+
+create policy "Users update own notifications"
+  on notifications for update using (auth.uid() = user_id);
+
+notify pgrst, 'reload schema';
+```
+
+> **Phase 8 RLS notes:** `sitter_profiles` is fully public (read-only for others). `applications` uses 4 policies — applicants can insert/read their own, request owner can read/update status. `reviews` enforces one-per-request via `unique(request_id)` and only the verified owner of a completed request can insert. `notifications` allows any authenticated user to insert (needed for cross-user notifications) but read/update is scoped to `user_id`.
+
+**8. Create the `photos` table**
 
 In the SQL editor, also run:
 

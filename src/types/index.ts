@@ -98,3 +98,58 @@ export type ServiceRequest = {
   visitReport?: VisitReport;
   createdAt?: string;
 };
+
+// ── Phase 8 types ─────────────────────────────────────────────────────────────
+
+export type SitterProfile = {
+  userId: string;
+  displayName: string;
+  bio?: string;
+  area?: string;
+  hasCatExperience: boolean;
+  hasDogExperience: boolean;
+  availableDays: string[];
+  preferredServiceTypes: string[];
+  completedVisitsCount: number;
+  averageRating?: number;
+  reviewCount: number;
+};
+
+export type ApplicationStatus = "pending" | "accepted" | "declined";
+
+export type Application = {
+  id: string;
+  requestId: string;
+  applicantUserId: string;
+  applicantDisplayName?: string;
+  message: string;
+  status: ApplicationStatus;
+  createdAt: string;
+};
+
+export type Review = {
+  id: string;
+  requestId: string;
+  sitterUserId: string;
+  ownerUserId: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+};
+
+export type NotificationType =
+  | "new_application"
+  | "application_accepted"
+  | "application_declined"
+  | "visit_completed"
+  | "new_review";
+
+export type AppNotification = {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  requestId?: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+};

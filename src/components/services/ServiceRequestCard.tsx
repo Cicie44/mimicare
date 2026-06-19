@@ -1,16 +1,36 @@
 import { useState } from "react";
-import type { ServiceRequest, ServiceRequestStatus, VisitChecklist, VisitReport } from "../../types";
+import type {
+  Application,
+  Review,
+  ServiceRequest,
+  ServiceRequestStatus,
+  VisitChecklist,
+  VisitReport,
+} from "../../types";
 import VisitReportForm from "./VisitReportForm";
+import ApplicationCard from "./ApplicationCard";
+import ApplicationForm from "./ApplicationForm";
+import SitterReviewForm from "./SitterReviewForm";
 
 type Role = "owner" | "sitter" | "public";
 
 type Props = {
   req: ServiceRequest;
   role: Role;
+  // owner-only
+  applications?: Application[];
+  existingReview?: Review;
   onEdit?: () => void;
   onDelete?: () => void;
   onCancel?: (id: string) => Promise<void>;
-  onAccept?: (id: string) => Promise<void>;
+  onAcceptApplicant?: (requestId: string, applicationId: string, applicantUserId: string) => Promise<void>;
+  onDeclineApplicant?: (applicationId: string, applicantUserId: string) => Promise<void>;
+  onReview?: (requestId: string, sitterUserId: string, rating: number, comment?: string) => Promise<void>;
+  // public-only
+  myApplication?: Application;
+  onApply?: (requestId: string, message: string) => Promise<void>;
+  onViewProfile?: (userId: string) => void;
+  // sitter-only
   onChecklistToggle?: (id: string, checklist: VisitChecklist) => Promise<void>;
   onSaveReport?: (id: string, report: VisitReport) => Promise<void>;
   onUpdateStatus?: (id: string, status: ServiceRequestStatus) => Promise<void>;
@@ -60,12 +80,19 @@ function formatDuration(mins: number): string {
 }
 
 export default function ServiceRequestCard({
-  req, role, onEdit, onDelete, onCancel, onAccept,
+  req, role,
+  applications = [], existingReview,
+  onEdit, onDelete, onCancel,
+  onAcceptApplicant, onDeclineApplicant, onReview,
+  myApplication, onApply, onViewProfile,
   onChecklistToggle, onSaveReport, onUpdateStatus,
 }: Props) {
   const [showChecklist, setShowChecklist] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showReportForm, setShowReportForm] = useState(false);
+  const [showApplicants, setShowApplicants] = useState(false);
+  const [showApplyForm, setShowApplyForm] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function wrap(fn: () => Promise<void>) {
@@ -81,6 +108,7 @@ export default function ServiceRequestCard({
   const checklistDone = checklistLabels.filter((c) => req.checklist[c.key]).length;
   const showSensitive = role === "owner" || role === "sitter";
   const checklistInteractive = role === "sitter" && req.status !== "completed";
+  const pendingApplicants = applications.filter((a) => a.status === "pending");
 
   return (
     <div className={`card border ${statusStyle[req.status]}`}>
@@ -116,14 +144,24 @@ export default function ServiceRequestCard({
         </p>
       )}
 
-      {/* Sitter info (owner view when accepted) */}
+      {/* Sitter assigned (owner view) */}
       {role === "owner" && req.sitterUserId && (
-        <p className="mt-2 text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2 font-medium">
-          🙋 Sitter has accepted this request
-        </p>
+        <div className="mt-2 flex items-center gap-2">
+          <p className="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-1.5 font-medium flex-1">
+            🙋 Sitter has been assigned
+          </p>
+          {onViewProfile && (
+            <button
+              onClick={() => onViewProfile(req.sitterUserId!)}
+              className="text-xs text-rose-400 hover:text-rose-500 font-medium transition-colors whitespace-nowrap"
+            >
+              👤 Profile
+            </button>
+          )}
+        </div>
       )}
 
-      {/* Sensitive details — owner & sitter only */}
+      {/* Sensitive details */}
       {showSensitive && (
         <div className="mt-3 space-y-1.5 border-t border-current border-opacity-10 pt-3">
           {req.careInstructions && (
@@ -136,14 +174,57 @@ export default function ServiceRequestCard({
               <span className="font-semibold">🔑 Access:</span> {req.homeAccessNotes}
             </p>
           )}
-          <p className="text-xs text-gray-600">
-            <span className="font-semibold">🚨 Emergency:</span>{" "}
-            {req.emergencyContactName} · {req.emergencyContactPhone}
-          </p>
+          {req.emergencyContactName && (
+            <p className="text-xs text-gray-600">
+              <span className="font-semibold">🚨 Emergency:</span>{" "}
+              {req.emergencyContactName} · {req.emergencyContactPhone}
+            </p>
+          )}
         </div>
       )}
 
-      {/* Checklist — shown for sitter (interactive) and owner (readonly) when accepted/active */}
+      {/* Owner: Applicants section */}
+      {role === "owner" && req.status === "open" && (
+        <div className="mt-3 border-t border-current border-opacity-10 pt-3">
+          <button
+            onClick={() => setShowApplicants((v) => !v)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-rose-400 transition-colors w-full"
+          >
+            <span>🙋</span>
+            <span>
+              Applicants ({pendingApplicants.length} pending
+              {applications.length > pendingApplicants.length
+                ? `, ${applications.length - pendingApplicants.length} other`
+                : ""})
+            </span>
+            <span className="ml-auto">{showApplicants ? "▲" : "▼"}</span>
+          </button>
+          {showApplicants && (
+            <div className="mt-2 space-y-2">
+              {applications.length === 0 ? (
+                <p className="text-xs text-gray-400 italic py-2">No applications yet</p>
+              ) : (
+                applications.map((app) => (
+                  <ApplicationCard
+                    key={app.id}
+                    app={app}
+                    busy={busy}
+                    onViewProfile={onViewProfile ? () => onViewProfile(app.applicantUserId) : undefined}
+                    onAccept={() =>
+                      wrap(() => onAcceptApplicant!(req.id, app.id, app.applicantUserId))
+                    }
+                    onDecline={() =>
+                      wrap(() => onDeclineApplicant!(app.id, app.applicantUserId))
+                    }
+                  />
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Checklist */}
       {(req.status === "accepted" || req.status === "in_progress" || req.status === "completed") &&
         (role === "sitter" || role === "owner") && (
           <div className="mt-3 border-t border-current border-opacity-10 pt-3">
@@ -162,9 +243,12 @@ export default function ServiceRequestCard({
                     <button
                       type="button"
                       disabled={!checklistInteractive || busy}
-                      onClick={() => checklistInteractive && wrap(() =>
-                        onChecklistToggle!(req.id, { ...req.checklist, [key]: !req.checklist[key] })
-                      )}
+                      onClick={() =>
+                        checklistInteractive &&
+                        wrap(() =>
+                          onChecklistToggle!(req.id, { ...req.checklist, [key]: !req.checklist[key] })
+                        )
+                      }
                       className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${
                         req.checklist[key]
                           ? "bg-rose-400 border-rose-400 text-white"
@@ -224,18 +308,70 @@ export default function ServiceRequestCard({
         </div>
       )}
 
+      {/* Owner: review after completion */}
+      {role === "owner" && req.status === "completed" && req.sitterUserId && (
+        <div className="mt-3 border-t border-current border-opacity-10 pt-3">
+          {existingReview ? (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <span>{"⭐".repeat(existingReview.rating)}</span>
+              <span>You reviewed this visit</span>
+            </div>
+          ) : showReviewForm ? (
+            <SitterReviewForm
+              onSubmit={async (rating, comment) => {
+                await onReview!(req.id, req.sitterUserId!, rating, comment);
+                setShowReviewForm(false);
+              }}
+              onCancel={() => setShowReviewForm(false)}
+            />
+          ) : (
+            <button
+              onClick={() => setShowReviewForm(true)}
+              className="text-xs font-semibold text-amber-500 hover:text-amber-600 transition-colors"
+            >
+              ⭐ Leave a Review
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Public: apply form */}
+      {role === "public" && showApplyForm && (
+        <ApplicationForm
+          onSubmit={async (message) => {
+            await onApply!(req.id, message);
+            setShowApplyForm(false);
+          }}
+          onCancel={() => setShowApplyForm(false)}
+        />
+      )}
+
       {/* Actions */}
       <div className="mt-3 border-t border-current border-opacity-10 pt-3 flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex gap-3">
-          {/* Public: accept button */}
-          {role === "public" && req.status === "open" && (
-            <button
-              onClick={() => wrap(() => onAccept!(req.id))}
-              disabled={busy}
-              className="text-sm font-semibold text-white bg-rose-400 hover:bg-rose-500 px-3 py-1 rounded-xl transition-colors disabled:opacity-60"
-            >
-              {busy ? "Accepting..." : "🐾 Accept Request"}
-            </button>
+        <div className="flex gap-3 flex-wrap">
+          {/* Public: apply button */}
+          {role === "public" && req.status === "open" && !showApplyForm && (
+            myApplication ? (
+              <span className={`text-xs font-medium px-3 py-1 rounded-xl border ${
+                myApplication.status === "accepted"
+                  ? "bg-green-50 text-green-600 border-green-200"
+                  : myApplication.status === "declined"
+                  ? "bg-gray-50 text-gray-400 border-gray-200"
+                  : "bg-blue-50 text-blue-500 border-blue-200"
+              }`}>
+                {myApplication.status === "accepted" ? "✓ Accepted" :
+                 myApplication.status === "declined" ? "Not selected" :
+                 "🕐 Applied"}
+              </span>
+            ) : (
+              <button
+                onClick={() => setShowApplyForm(true)}
+                disabled={busy}
+                className="text-sm font-semibold text-white bg-rose-400 hover:bg-rose-500 px-3 py-1 rounded-xl transition-colors disabled:opacity-60"
+              >
+                🐾 Apply
+              </button>
+            )
           )}
 
           {/* Sitter: status progression */}
@@ -264,7 +400,7 @@ export default function ServiceRequestCard({
               disabled={busy}
               className="text-xs text-gray-400 hover:text-red-400 font-medium transition-colors"
             >
-              ✕ Cancel Request
+              ✕ Cancel
             </button>
           )}
         </div>

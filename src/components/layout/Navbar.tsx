@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import NotificationMenu from "./NotificationMenu";
+import type { AppNotification } from "../../types";
 
 type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme" | "services";
 
@@ -7,6 +9,9 @@ type Props = {
   onNavigate: (page: Page) => void;
   userEmail?: string;
   onLogout?: () => void;
+  notifications?: AppNotification[];
+  onMarkNotificationRead?: (id: string) => void;
+  onMarkAllNotificationsRead?: () => void;
 };
 
 type NavGroup = {
@@ -75,7 +80,6 @@ function DropdownGroup({
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     function handler(e: MouseEvent) {
@@ -86,12 +90,7 @@ function DropdownGroup({
   }, [open]);
 
   return (
-    <div
-      ref={ref}
-      className="relative"
-      onMouseEnter={openMenu}
-      onMouseLeave={scheduleClose}
-    >
+    <div ref={ref} className="relative" onMouseEnter={openMenu} onMouseLeave={scheduleClose}>
       <button
         onClick={() => setOpen((v) => !v)}
         className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
@@ -127,7 +126,12 @@ function DropdownGroup({
   );
 }
 
-export default function Navbar({ currentPage, onNavigate, userEmail, onLogout }: Props) {
+export default function Navbar({
+  currentPage, onNavigate, userEmail, onLogout,
+  notifications = [],
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead,
+}: Props) {
   return (
     <nav className="bg-white border-b border-orange-100 sticky top-0 z-50 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
@@ -165,21 +169,31 @@ export default function Navbar({ currentPage, onNavigate, userEmail, onLogout }:
           ))}
         </div>
 
-        {onLogout && (
-          <div className="flex items-center gap-2 shrink-0">
-            {userEmail && (
-              <span className="hidden md:block text-xs text-gray-400 truncate max-w-[120px]">
-                {userEmail}
-              </span>
-            )}
-            <button
-              onClick={onLogout}
-              className="text-xs px-3 py-1.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:border-red-200 hover:text-red-400 transition-all"
-            >
-              Log Out
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {onMarkNotificationRead && onMarkAllNotificationsRead && (
+            <NotificationMenu
+              notifications={notifications}
+              onMarkRead={onMarkNotificationRead}
+              onMarkAllRead={onMarkAllNotificationsRead}
+            />
+          )}
+
+          {onLogout && (
+            <>
+              {userEmail && (
+                <span className="hidden md:block text-xs text-gray-400 truncate max-w-[120px]">
+                  {userEmail}
+                </span>
+              )}
+              <button
+                onClick={onLogout}
+                className="text-xs px-3 py-1.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:border-red-200 hover:text-red-400 transition-all"
+              >
+                Log Out
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   );
