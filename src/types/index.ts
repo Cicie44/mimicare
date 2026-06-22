@@ -99,9 +99,9 @@ export type ServiceRequest = {
   createdAt?: string;
 };
 
-// ── Phase 8 types ─────────────────────────────────────────────────────────────
+// ── User profile (replaces SitterProfile) ────────────────────────────────────
 
-export type SitterProfile = {
+export type UserProfile = {
   userId: string;
   displayName: string;
   bio?: string;
@@ -113,7 +113,13 @@ export type SitterProfile = {
   completedVisitsCount: number;
   averageRating?: number;
   reviewCount: number;
+  postCount: number;
 };
+
+// Keep legacy alias so old service files still compile during transition
+export type SitterProfile = UserProfile;
+
+// ── Legacy Phase 8 types (kept for existing service files) ────────────────────
 
 export type ApplicationStatus = "pending" | "accepted" | "declined";
 
@@ -142,14 +148,109 @@ export type NotificationType =
   | "application_accepted"
   | "application_declined"
   | "visit_completed"
-  | "new_review";
+  | "new_review"
+  | "post_comment"
+  | "post_like"
+  | "help_application";
 
 export type AppNotification = {
   id: string;
   userId: string;
   type: NotificationType;
   requestId?: string;
+  postId?: string;
   message: string;
   read: boolean;
+  createdAt: string;
+};
+
+// ── Community types ───────────────────────────────────────────────────────────
+
+export type PostCategory = "pet_daily" | "tips" | "sitter_help";
+export type PostStatus = "open" | "accepted" | "completed";
+export type CompensationType = "volunteer" | "open" | "fixed";
+
+export type SitterHelpDetails = {
+  postId: string;
+  requestDate?: string;
+  area?: string;
+  petType?: string;
+  duration?: string;
+  compensation: CompensationType;
+  compensationNote?: string;
+};
+
+export type CommunityPost = {
+  id: string;
+  userId: string;
+  authorName?: string;
+  category: PostCategory;
+  title?: string;
+  content: string;
+  storagePath?: string;
+  signedUrl?: string;
+  tags: string[];
+  status: PostStatus;
+  createdAt: string;
+  likesCount: number;
+  commentsCount: number;
+  likedByMe: boolean;
+  helpDetails?: SitterHelpDetails;
+};
+
+export type PostComment = {
+  id: string;
+  postId: string;
+  userId: string;
+  authorName?: string;
+  content: string;
+  createdAt: string;
+};
+
+export type PostApplication = {
+  id: string;
+  postId: string;
+  applicantUserId: string;
+  applicantDisplayName?: string;
+  message?: string;
+  status: ApplicationStatus;
+  createdAt: string;
+};
+
+export type PostReview = {
+  id: string;
+  postId: string;
+  reviewerUserId: string;
+  sitterUserId: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+};
+
+// ── Messaging ─────────────────────────────────────────────────────────────────
+
+export type ConversationStatus = "active" | "request" | "blocked";
+
+export type Conversation = {
+  id: string;
+  participantA: string;
+  participantB: string;
+  status: ConversationStatus;
+  initiatedBy?: string;
+  lastMessageAt: string;
+  createdAt: string;
+  // enriched client-side
+  otherUserId: string;
+  otherUserName?: string;
+  lastMessagePreview?: string;
+  unreadCount: number;
+};
+
+export type Message = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  readAt?: string;
   createdAt: string;
 };

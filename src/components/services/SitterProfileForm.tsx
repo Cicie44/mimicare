@@ -10,7 +10,7 @@ const ALL_SERVICE_TYPES = [
   "Medication Administration",
 ];
 
-type ProfileInput = Omit<SitterProfile, "completedVisitsCount" | "averageRating" | "reviewCount">;
+type ProfileInput = Omit<SitterProfile, "completedVisitsCount" | "averageRating" | "reviewCount" | "postCount">;
 
 type Props = {
   initialData?: SitterProfile | null;

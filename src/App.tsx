@@ -11,63 +11,76 @@ import RemindersPage from "./pages/RemindersPage";
 import GalleryPage from "./pages/GalleryPage";
 import DiaryPage from "./pages/DiaryPage";
 import MemeStudioPage from "./pages/MemeStudioPage";
-import ServiceRequestsPage from "./pages/ServiceRequestsPage";
+import CommunityPage from "./pages/CommunityPage";
+import MessagesPage from "./pages/MessagesPage";
+import ActivityPage from "./pages/ActivityPage";
 import { mockPet } from "./data/mockData";
-import type { Application, AppNotification, DiaryEntry, Pet, PetPhoto, Reminder, Review, ServiceRequest, ServiceRequestStatus, SitterProfile, VaccineRecord, VisitChecklist, VisitReport } from "./types";
+import type {
+  AppNotification,
+  CommunityPost,
+  DiaryEntry,
+  Pet,
+  PetPhoto,
+  PostApplication,
+  Reminder,
+  UserProfile,
+  VaccineRecord,
+} from "./types";
 import * as diaryService from "./services/diaryService";
 import * as reminderService from "./services/reminderService";
 import * as petService from "./services/petService";
 import * as vaccineService from "./services/vaccineService";
 import * as authService from "./services/authService";
 import * as photoService from "./services/photoService";
-import * as serviceRequestService from "./services/serviceRequestService";
-import * as applicationService from "./services/applicationService";
-import * as reviewService from "./services/reviewService";
 import * as notificationService from "./services/notificationService";
-import * as sitterProfileService from "./services/sitterProfileService";
+import * as userProfileService from "./services/userProfileService";
+import * as postApplicationService from "./services/postApplicationService";
+import * as communityService from "./services/communityService";
+import * as messageService from "./services/messageService";
 
-type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme" | "services";
+type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme" | "community" | "messages" | "activity";
 type Toast = { type: "success" | "error"; message: string };
 
 export default function App() {
   const [page, setPage] = useState<Page>("home");
 
-  // Auth state
+  // Auth
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Data state
+  // Core data
   const [pet, setPet] = useState<Pet>(mockPet);
   const [vaccines, setVaccines] = useState<VaccineRecord[]>([]);
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [photos, setPhotos] = useState<PetPhoto[]>([]);
-  const [myRequests, setMyRequests] = useState<ServiceRequest[]>([]);
-  const [publicRequests, setPublicRequests] = useState<ServiceRequest[]>([]);
-  const [myJobs, setMyJobs] = useState<ServiceRequest[]>([]);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [myApplications, setMyApplications] = useState<Application[]>([]);
-  const [reviewsGiven, setReviewsGiven] = useState<Review[]>([]);
+
+  // Community
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [postApplications, setPostApplications] = useState<PostApplication[]>([]);
+  const [myPostApplications, setMyPostApplications] = useState<PostApplication[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
+
+  // Messages & blocking
+  const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [initialConversationId, setInitialConversationId] = useState<string | undefined>();
+
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-
   const [toast, setToast] = useState<Toast | null>(null);
   const toastTimer = useRef<number | null>(null);
 
-  // ── Auth session ─────────────────────────────────────────────────────────────
+  // ── Auth ──────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -75,25 +88,22 @@ export default function App() {
     if (user) {
       loadData(user.id);
     } else {
-      // Clear data when logged out
       setPet(mockPet);
       setDiary([]);
       setReminders([]);
       setVaccines([]);
       setPhotos([]);
-      setMyRequests([]);
-      setPublicRequests([]);
-      setMyJobs([]);
-      setApplications([]);
-      setMyApplications([]);
-      setReviewsGiven([]);
+      setUserProfile(null);
+      setPostApplications([]);
+      setMyPostApplications([]);
       setNotifications([]);
-      setSitterProfile(null);
+      setBlockedUserIds([]);
+      setUnreadMessageCount(0);
       setPage("home");
     }
   }, [user]);
 
-  // ── Toast ────────────────────────────────────────────────────────────────────
+  // ── Toast ─────────────────────────────────────────────────────────────────────
 
   function showToast(type: Toast["type"], message: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -101,7 +111,7 @@ export default function App() {
     toastTimer.current = window.setTimeout(() => setToast(null), 3000);
   }
 
-  // ── Data loading ─────────────────────────────────────────────────────────────
+  // ── Data loading ──────────────────────────────────────────────────────────────
 
   async function loadData(userId: string) {
     setLoading(true);
@@ -109,40 +119,34 @@ export default function App() {
     try {
       const [
         entries, rems, fetchedPet, vaxes, fetchedPhotos,
-        myReqs, pubReqs, jobs,
-        apps, myApps, revs, notifs, profile,
+        profile, postApps, myApps, notifs, blocked, unreadMsgs,
       ] = await Promise.all([
         diaryService.fetchDiaryEntries(),
         reminderService.fetchReminders(),
         petService.fetchPet(),
         vaccineService.fetchVaccines(),
         photoService.fetchPhotos(),
-        serviceRequestService.fetchMyRequests(userId),
-        serviceRequestService.fetchPublicRequests(userId),
-        serviceRequestService.fetchMyJobs(userId),
-        applicationService.fetchApplicationsForMyRequests(userId),
-        applicationService.fetchMyApplications(userId),
-        reviewService.fetchReviewsGiven(userId),
+        userProfileService.fetchProfile(userId),
+        postApplicationService.fetchApplicationsForMyPosts(userId),
+        postApplicationService.fetchMyPostApplications(userId),
         notificationService.fetchNotifications(userId),
-        sitterProfileService.fetchProfile(userId),
+        messageService.fetchBlockedUserIds(userId),
+        messageService.fetchUnreadMessageCount(userId),
       ]);
       setDiary(entries);
       setReminders(rems);
       setVaccines(vaxes);
       setPhotos(fetchedPhotos);
-      setMyRequests(myReqs);
-      setPublicRequests(pubReqs);
-      setMyJobs(jobs);
-      setApplications(apps);
-      setMyApplications(myApps);
-      setReviewsGiven(revs);
+      setUserProfile(profile);
+      setPostApplications(postApps);
+      setMyPostApplications(myApps);
       setNotifications(notifs);
-      setSitterProfile(profile);
+      setBlockedUserIds(blocked);
+      setUnreadMessageCount(unreadMsgs);
 
       if (fetchedPet) {
         setPet(fetchedPet);
       } else {
-        // New user — start with a blank profile (user fills it in themselves)
         setPet({
           id: userId,
           name: "",
@@ -165,21 +169,16 @@ export default function App() {
   // ── Auth actions ──────────────────────────────────────────────────────────────
 
   async function handleLogout() {
-    try {
-      await authService.signOut();
-    } catch (err) {
-      console.error(err);
-    }
+    try { await authService.signOut(); } catch (err) { console.error(err); }
   }
 
-  // ── Photos ───────────────────────────────────────────────────────────────────
+  // ── Photos ────────────────────────────────────────────────────────────────────
 
   async function addPhoto(file: File, caption: string, tags: string[], date: string): Promise<void> {
     try {
       const storagePath = await photoService.uploadPhoto(file, user!.id);
       const created = await photoService.createPhotoRecord(
-        { petId: pet.id, storagePath, caption, tags, date },
-        user!.id
+        { petId: pet.id, storagePath, caption, tags, date }, user!.id
       );
       const signedUrl = await photoService.createSignedUrl(storagePath);
       setPhotos((prev) => [{ ...created, signedUrl }, ...prev]);
@@ -202,7 +201,7 @@ export default function App() {
     }
   }
 
-  // ── Pet ──────────────────────────────────────────────────────────────────────
+  // ── Pet ───────────────────────────────────────────────────────────────────────
 
   async function savePet(updated: Pet): Promise<void> {
     try {
@@ -221,16 +220,9 @@ export default function App() {
   async function addVaccine(vaccine: VaccineRecord): Promise<void> {
     try {
       const created = await vaccineService.createVaccine(
-        {
-          petId: pet.id,
-          name: vaccine.name,
-          doseNumber: vaccine.doseNumber,
-          dateGiven: vaccine.dateGiven,
-          nextDueDate: vaccine.nextDueDate,
-          clinicName: vaccine.clinicName,
-          notes: vaccine.notes,
-        },
-        user!.id
+        { petId: pet.id, name: vaccine.name, doseNumber: vaccine.doseNumber,
+          dateGiven: vaccine.dateGiven, nextDueDate: vaccine.nextDueDate,
+          clinicName: vaccine.clinicName, notes: vaccine.notes }, user!.id
       );
       setVaccines((prev) => [created, ...prev]);
       showToast("success", "Vaccine record added! 💉");
@@ -269,15 +261,8 @@ export default function App() {
   async function addDiaryEntry(entry: DiaryEntry): Promise<void> {
     try {
       const created = await diaryService.createDiaryEntry(
-        {
-          petId: pet.id,
-          date: entry.date,
-          mood: entry.mood,
-          food: entry.food,
-          activity: entry.activity,
-          notes: entry.notes,
-        },
-        user!.id
+        { petId: pet.id, date: entry.date, mood: entry.mood,
+          food: entry.food, activity: entry.activity, notes: entry.notes }, user!.id
       );
       setDiary((prev) => [created, ...prev]);
       showToast("success", "Diary entry saved! 🐾");
@@ -316,15 +301,8 @@ export default function App() {
   async function addReminder(reminder: Reminder): Promise<void> {
     try {
       const created = await reminderService.createReminder(
-        {
-          petId: pet.id,
-          title: reminder.title,
-          category: reminder.category,
-          dueDate: reminder.dueDate,
-          status: reminder.status,
-          notes: reminder.notes,
-        },
-        user!.id
+        { petId: pet.id, title: reminder.title, category: reminder.category,
+          dueDate: reminder.dueDate, status: reminder.status, notes: reminder.notes }, user!.id
       );
       setReminders((prev) => [created, ...prev]);
       showToast("success", "Reminder added! 🔔");
@@ -338,9 +316,7 @@ export default function App() {
   async function markReminderDone(id: string): Promise<void> {
     try {
       await reminderService.markReminderDone(id);
-      setReminders((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status: "done" as const } : r))
-      );
+      setReminders((prev) => prev.map((r) => (r.id === id ? { ...r, status: "done" as const } : r)));
       showToast("success", "Marked as done! ✅");
     } catch (err) {
       console.error(err);
@@ -351,9 +327,7 @@ export default function App() {
   async function updateReminder(reminder: Reminder): Promise<void> {
     try {
       await reminderService.updateReminder(reminder);
-      setReminders((prev) =>
-        prev.map((r) => (r.id === reminder.id ? reminder : r))
-      );
+      setReminders((prev) => prev.map((r) => (r.id === reminder.id ? reminder : r)));
       showToast("success", "Reminder updated! 🔔");
     } catch (err) {
       console.error(err);
@@ -373,77 +347,26 @@ export default function App() {
     }
   }
 
-  // ── Service Requests ──────────────────────────────────────────────────────────
+  // ── Community ─────────────────────────────────────────────────────────────────
 
-  function updateInMyRequests(id: string, patch: Partial<ServiceRequest>) {
-    setMyRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-  }
-  function updateInMyJobs(id: string, patch: Partial<ServiceRequest>) {
-    setMyJobs((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-  }
-
-  async function addServiceRequest(req: ServiceRequest): Promise<void> {
+  async function handleSaveProfile(
+    profile: Omit<UserProfile, "completedVisitsCount" | "averageRating" | "reviewCount" | "postCount">
+  ): Promise<void> {
     try {
-      const created = await serviceRequestService.createServiceRequest(req, user!.id);
-      setMyRequests((prev) => [created, ...prev]);
-      showToast("success", "Request posted! 🏡");
+      const saved = await userProfileService.upsertProfile(profile, user!.id);
+      setUserProfile(saved);
+      showToast("success", "Profile saved! 🐾");
     } catch (err) {
       console.error(err);
-      showToast("error", "Failed to post request.");
+      showToast("error", "Failed to save profile.");
       throw err;
     }
   }
 
-  async function updateServiceRequest(req: ServiceRequest): Promise<void> {
+  async function handleApply(postId: string, message: string): Promise<void> {
     try {
-      await serviceRequestService.updateServiceRequest(req);
-      updateInMyRequests(req.id, req);
-      showToast("success", "Request updated! 🐾");
-    } catch (err) {
-      console.error(err);
-      showToast("error", "Failed to update request.");
-      throw err;
-    }
-  }
-
-  async function deleteServiceRequest(id: string): Promise<void> {
-    try {
-      await serviceRequestService.deleteServiceRequest(id);
-      setMyRequests((prev) => prev.filter((r) => r.id !== id));
-      showToast("success", "Request deleted.");
-    } catch (err) {
-      console.error(err);
-      showToast("error", "Failed to delete request.");
-    }
-  }
-
-  async function cancelServiceRequest(id: string): Promise<void> {
-    try {
-      await serviceRequestService.updateStatus(id, "cancelled");
-      updateInMyRequests(id, { status: "cancelled" });
-      showToast("success", "Request cancelled.");
-    } catch (err) {
-      console.error(err);
-      showToast("error", "Failed to cancel request.");
-    }
-  }
-
-  // ── Phase 8: Applications ─────────────────────────────────────────────────────
-
-  async function handleApply(requestId: string, message: string): Promise<void> {
-    try {
-      const app = await applicationService.applyToRequest(requestId, message, user!.id);
-      setMyApplications((prev) => [app, ...prev]);
-      // notify the request owner
-      const req = publicRequests.find((r) => r.id === requestId);
-      if (req) {
-        await notificationService.createNotification(
-          req.ownerUserId,
-          "new_application",
-          `🙋 ${sitterProfile?.displayName ?? "Someone"} applied to your ${req.serviceType} request`,
-          requestId
-        );
-      }
+      const app = await postApplicationService.applyToPost(postId, message, user!.id);
+      setMyPostApplications((prev) => [app, ...prev]);
       showToast("success", "Application sent! 🐾");
     } catch (err) {
       console.error(err);
@@ -453,41 +376,22 @@ export default function App() {
   }
 
   async function handleAcceptApplicant(
-    requestId: string,
-    applicationId: string,
-    applicantUserId: string
+    postId: string, appId: string, applicantUserId: string
   ): Promise<void> {
     try {
-      await applicationService.acceptApplication(requestId, applicationId, applicantUserId);
-      // Update local state: request moves to accepted, applications updated
-      updateInMyRequests(requestId, { status: "accepted", sitterUserId: applicantUserId });
-      setApplications((prev) =>
+      await postApplicationService.acceptPostApplication(postId, appId, applicantUserId);
+      setPostApplications((prev) =>
         prev.map((a) =>
-          a.requestId === requestId
-            ? { ...a, status: a.id === applicationId ? "accepted" : "declined" }
+          a.postId === postId
+            ? { ...a, status: a.id === appId ? "accepted" : "declined" }
             : a
-        )
+        ) as PostApplication[]
       );
-      // Notify accepted applicant
+      // Auto-activate conversation with accepted helper
+      await messageService.activateConversation(user!.id, applicantUserId);
       await notificationService.createNotification(
-        applicantUserId,
-        "application_accepted",
-        `✅ Your application was accepted! Check your jobs to get started.`,
-        requestId
-      );
-      // Notify declined applicants
-      const declined = applications.filter(
-        (a) => a.requestId === requestId && a.id !== applicationId && a.status === "pending"
-      );
-      await Promise.all(
-        declined.map((a) =>
-          notificationService.createNotification(
-            a.applicantUserId,
-            "application_declined",
-            `Your application was not selected this time.`,
-            requestId
-          )
-        )
+        applicantUserId, "help_application",
+        "✅ Your application was accepted!", postId
       );
       showToast("success", "Applicant accepted! ✅");
     } catch (err) {
@@ -496,19 +400,11 @@ export default function App() {
     }
   }
 
-  async function handleDeclineApplicant(
-    applicationId: string,
-    applicantUserId: string
-  ): Promise<void> {
+  async function handleDeclineApplicant(appId: string): Promise<void> {
     try {
-      await applicationService.declineApplication(applicationId);
-      setApplications((prev) =>
-        prev.map((a) => (a.id === applicationId ? { ...a, status: "declined" as const } : a))
-      );
-      await notificationService.createNotification(
-        applicantUserId,
-        "application_declined",
-        `Your application was not selected this time.`
+      await postApplicationService.declinePostApplication(appId);
+      setPostApplications((prev) =>
+        prev.map((a) => (a.id === appId ? { ...a, status: "declined" as const } : a))
       );
       showToast("success", "Application declined.");
     } catch (err) {
@@ -517,48 +413,52 @@ export default function App() {
     }
   }
 
-  // ── Phase 8: Reviews ──────────────────────────────────────────────────────────
-
-  async function handleReview(
-    requestId: string,
-    sitterUserId: string,
-    rating: number,
-    comment?: string
-  ): Promise<void> {
+  async function handleCompletePost(postId: string): Promise<void> {
     try {
-      const review = await reviewService.submitReview(requestId, sitterUserId, user!.id, rating, comment);
-      setReviewsGiven((prev) => [review, ...prev]);
-      await notificationService.createNotification(
-        sitterUserId,
-        "new_review",
-        `⭐ You received a ${rating}-star review!`,
-        requestId
-      );
-      showToast("success", "Review submitted! ⭐");
+      await communityService.updatePostStatus(postId, "completed");
+      showToast("success", "Marked as completed! 🎉");
     } catch (err) {
       console.error(err);
-      showToast("error", "Failed to submit review.");
+      showToast("error", "Failed to update status.");
       throw err;
     }
   }
 
-  // ── Phase 8: Sitter Profile ───────────────────────────────────────────────────
+  function handlePostCreated(_post: CommunityPost) {
+    if (user) {
+      postApplicationService.fetchApplicationsForMyPosts(user.id)
+        .then(setPostApplications)
+        .catch(console.error);
+    }
+  }
 
-  async function handleSaveProfile(
-    profile: Omit<SitterProfile, "completedVisitsCount" | "averageRating" | "reviewCount">
-  ): Promise<void> {
+  function handlePostDeleted(_postId: string) {}
+
+  // ── Messages ──────────────────────────────────────────────────────────────────
+
+  async function handleStartConversation(otherUserId: string): Promise<void> {
     try {
-      const saved = await sitterProfileService.upsertProfile(profile, user!.id);
-      setSitterProfile(saved);
-      showToast("success", "Profile saved! 🐾");
+      const conv = await messageService.findOrCreateConversation(user!.id, otherUserId, "request");
+      setInitialConversationId(conv.id);
+      setPage("messages");
     } catch (err) {
       console.error(err);
-      showToast("error", "Failed to save profile.");
+      showToast("error", "Could not open conversation.");
+    }
+  }
+
+  async function handleBlockUser(userId: string): Promise<void> {
+    try {
+      await messageService.blockUser(user!.id, userId);
+      setBlockedUserIds((prev) => [...prev, userId]);
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to block user.");
       throw err;
     }
   }
 
-  // ── Phase 8: Notifications ────────────────────────────────────────────────────
+  // ── Notifications ─────────────────────────────────────────────────────────────
 
   function handleMarkNotificationRead(id: string) {
     notificationService.markAsRead(id).catch(console.error);
@@ -570,52 +470,8 @@ export default function App() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }
 
-  async function handleSaveReport(id: string, report: VisitReport): Promise<void> {
-    try {
-      await serviceRequestService.saveVisitReport(id, report);
-      updateInMyJobs(id, { visitReport: report, status: "completed" });
-      // notify request owner
-      const job = myJobs.find((r) => r.id === id);
-      if (job) {
-        await notificationService.createNotification(
-          job.ownerUserId,
-          "visit_completed",
-          `🎉 Your sitter completed the ${job.serviceType} visit!`,
-          id
-        );
-      }
-      showToast("success", "Visit report saved! ✅");
-    } catch (err) {
-      console.error(err);
-      showToast("error", "Failed to save visit report.");
-      throw err;
-    }
-  }
-
-  async function handleChecklistToggle(id: string, checklist: VisitChecklist): Promise<void> {
-    try {
-      await serviceRequestService.updateChecklist(id, checklist);
-      updateInMyJobs(id, { checklist });
-    } catch (err) {
-      console.error(err);
-      showToast("error", "Failed to update checklist.");
-    }
-  }
-
-  async function handleServiceStatusUpdate(id: string, status: ServiceRequestStatus): Promise<void> {
-    try {
-      await serviceRequestService.updateStatus(id, status);
-      updateInMyJobs(id, { status });
-      showToast("success", `Status updated to ${status.replace("_", " ")}!`);
-    } catch (err) {
-      console.error(err);
-      showToast("error", "Failed to update status.");
-    }
-  }
-
   // ── Render ────────────────────────────────────────────────────────────────────
 
-  // Checking auth session on startup
   if (authLoading) {
     return (
       <div className="min-h-screen bg-orange-50 flex items-center justify-center">
@@ -627,10 +483,7 @@ export default function App() {
     );
   }
 
-  // Not logged in — show auth page
-  if (!user) {
-    return <AuthPage onAuthSuccess={() => {}} />;
-  }
+  if (!user) return <AuthPage onAuthSuccess={() => {}} />;
 
   function renderContent() {
     if (loading) {
@@ -641,15 +494,13 @@ export default function App() {
         </div>
       );
     }
-
     if (loadError) {
       return (
         <div className="flex flex-col items-center justify-center py-24">
           <p className="text-5xl mb-3">😿</p>
           <p className="font-medium text-gray-600 text-center max-w-sm mb-1">{loadError}</p>
           <p className="text-xs text-gray-400 text-center max-w-sm mb-5">
-            Make sure your{" "}
-            <code className="bg-gray-100 px-1 rounded">.env</code> file has the
+            Make sure your <code className="bg-gray-100 px-1 rounded">.env</code> file has the
             correct Supabase URL and anon key.
           </p>
           <button onClick={() => loadData(user!.id)} className="btn-primary">
@@ -663,81 +514,72 @@ export default function App() {
       <>
         {page === "home" && (
           <HomePage
-            pet={pet}
-            vaccines={vaccines}
-            reminders={reminders}
-            diary={diary}
-            photos={photos}
-            onNavigate={setPage}
+            pet={pet} vaccines={vaccines} reminders={reminders}
+            diary={diary} photos={photos} onNavigate={setPage}
           />
         )}
-        {page === "profile" && (
-          <PetProfilePage pet={pet} onUpdate={savePet} />
-        )}
+        {page === "profile" && <PetProfilePage pet={pet} onUpdate={savePet} />}
         {page === "vaccines" && (
           <VaccinesPage
-            vaccines={vaccines}
-            petId={pet.id}
-            onAdd={addVaccine}
-            onUpdate={editVaccine}
-            onDelete={removeVaccine}
+            vaccines={vaccines} petId={pet.id}
+            onAdd={addVaccine} onUpdate={editVaccine} onDelete={removeVaccine}
           />
         )}
         {page === "reminders" && (
           <RemindersPage
-            reminders={reminders}
-            petId={pet.id}
-            onAdd={addReminder}
-            onUpdate={updateReminder}
-            onMarkDone={markReminderDone}
-            onDelete={deleteReminder}
+            reminders={reminders} petId={pet.id}
+            onAdd={addReminder} onUpdate={updateReminder}
+            onMarkDone={markReminderDone} onDelete={deleteReminder}
           />
         )}
         {page === "gallery" && (
           <GalleryPage
-            photos={photos}
-            petId={pet.id}
-            onAdd={addPhoto}
-            onDelete={removePhoto}
+            photos={photos} petId={pet.id}
+            onAdd={addPhoto} onDelete={removePhoto}
           />
         )}
         {page === "meme" && (
-          <MemeStudioPage
-            photos={photos}
-            onNavigateToGallery={() => setPage("gallery")}
-          />
+          <MemeStudioPage photos={photos} onNavigateToGallery={() => setPage("gallery")} />
         )}
         {page === "diary" && (
           <DiaryPage
-            entries={diary}
-            petId={pet.id}
-            onAdd={addDiaryEntry}
-            onUpdate={updateDiaryEntry}
-            onDelete={deleteDiaryEntry}
+            entries={diary} petId={pet.id}
+            onAdd={addDiaryEntry} onUpdate={updateDiaryEntry} onDelete={deleteDiaryEntry}
           />
         )}
-        {page === "services" && (
-          <ServiceRequestsPage
-            myRequests={myRequests}
-            publicRequests={publicRequests}
-            myJobs={myJobs}
-            petId={pet.id}
-            applications={applications}
-            myApplications={myApplications}
-            reviewsGiven={reviewsGiven}
-            sitterProfile={sitterProfile}
-            onAdd={addServiceRequest}
-            onUpdate={updateServiceRequest}
-            onDelete={deleteServiceRequest}
-            onCancel={cancelServiceRequest}
+        {page === "community" && (
+          <CommunityPage
+            currentUserId={user!.id}
+            userProfile={userProfile}
+            postApplications={postApplications}
+            myPostApplications={myPostApplications}
+            blockedUserIds={blockedUserIds}
+            onSaveProfile={handleSaveProfile}
             onApply={handleApply}
             onAcceptApplicant={handleAcceptApplicant}
             onDeclineApplicant={handleDeclineApplicant}
-            onChecklistToggle={handleChecklistToggle}
-            onSaveReport={handleSaveReport}
-            onUpdateStatus={handleServiceStatusUpdate}
-            onReview={handleReview}
-            onSaveProfile={handleSaveProfile}
+            onComplete={handleCompletePost}
+            onPostCreated={handlePostCreated}
+            onPostDeleted={handlePostDeleted}
+            onStartConversation={handleStartConversation}
+            onBlockUser={handleBlockUser}
+            showToast={showToast}
+          />
+        )}
+        {page === "messages" && (
+          <MessagesPage
+            currentUserId={user!.id}
+            initialConversationId={initialConversationId}
+            onUnreadCountChange={setUnreadMessageCount}
+          />
+        )}
+        {page === "activity" && (
+          <ActivityPage
+            notifications={notifications}
+            onMarkRead={handleMarkNotificationRead}
+            onMarkAllRead={handleMarkAllNotificationsRead}
+            onNavigateToCommunity={() => setPage("community")}
+            onNavigateToMessages={() => setPage("messages")}
           />
         )}
       </>
@@ -752,8 +594,7 @@ export default function App() {
         userEmail={user.email}
         onLogout={handleLogout}
         notifications={notifications}
-        onMarkNotificationRead={handleMarkNotificationRead}
-        onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
+        unreadMessageCount={unreadMessageCount}
       />
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
         {renderContent()}

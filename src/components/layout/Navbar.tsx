@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import NotificationMenu from "./NotificationMenu";
 import type { AppNotification } from "../../types";
 
-type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme" | "services";
+type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme" | "community" | "messages" | "activity";
 
 type Props = {
   currentPage: Page;
@@ -10,8 +9,7 @@ type Props = {
   userEmail?: string;
   onLogout?: () => void;
   notifications?: AppNotification[];
-  onMarkNotificationRead?: (id: string) => void;
-  onMarkAllNotificationsRead?: () => void;
+  unreadMessageCount?: number;
 };
 
 type NavGroup = {
@@ -44,10 +42,10 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Services",
-    emoji: "🏡",
+    label: "Community",
+    emoji: "🌸",
     pages: [
-      { label: "Pet Sitting", page: "services", emoji: "🐾" },
+      { label: "Community", page: "community", emoji: "🐾" },
     ],
   },
 ];
@@ -129,9 +127,10 @@ function DropdownGroup({
 export default function Navbar({
   currentPage, onNavigate, userEmail, onLogout,
   notifications = [],
-  onMarkNotificationRead,
-  onMarkAllNotificationsRead,
+  unreadMessageCount = 0,
 }: Props) {
+  const unreadNotifCount = notifications.filter((n) => !n.read).length;
+
   return (
     <nav className="bg-white border-b border-orange-100 sticky top-0 z-50 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
@@ -169,14 +168,42 @@ export default function Navbar({
           ))}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {onMarkNotificationRead && onMarkAllNotificationsRead && (
-            <NotificationMenu
-              notifications={notifications}
-              onMarkRead={onMarkNotificationRead}
-              onMarkAllRead={onMarkAllNotificationsRead}
-            />
-          )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Messages icon */}
+          <button
+            onClick={() => onNavigate("messages")}
+            className={`relative p-2 rounded-xl transition-all ${
+              currentPage === "messages"
+                ? "bg-rose-100 text-rose-500"
+                : "text-gray-400 hover:bg-orange-50 hover:text-rose-400"
+            }`}
+            title="Messages"
+          >
+            <span className="text-lg">✉️</span>
+            {unreadMessageCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+              </span>
+            )}
+          </button>
+
+          {/* Activity / bell icon */}
+          <button
+            onClick={() => onNavigate("activity")}
+            className={`relative p-2 rounded-xl transition-all ${
+              currentPage === "activity"
+                ? "bg-rose-100 text-rose-500"
+                : "text-gray-400 hover:bg-orange-50 hover:text-rose-400"
+            }`}
+            title="Activity"
+          >
+            <span className="text-lg">🔔</span>
+            {unreadNotifCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {unreadNotifCount > 9 ? "9+" : unreadNotifCount}
+              </span>
+            )}
+          </button>
 
           {onLogout && (
             <>
