@@ -7,6 +7,7 @@ import * as userProfileService from "../services/userProfileService";
 import PostCard from "../components/community/PostCard";
 import PostComposer from "../components/community/PostComposer";
 import UserProfileCard from "../components/community/UserProfileCard";
+import ApplicationsModal from "../components/community/ApplicationsModal";
 import SitterProfileForm from "../components/services/SitterProfileForm";
 
 type Tab = "for_you" | "pet_daily" | "tips" | "sitter_help" | "my_posts" | "my_profile";
@@ -27,9 +28,9 @@ type Props = {
   myPostApplications: PostApplication[];
   blockedUserIds: string[];
   onSaveProfile: (p: Omit<UserProfile, "completedVisitsCount" | "averageRating" | "reviewCount" | "postCount">) => Promise<void>;
-  onApply: (postId: string, message: string) => Promise<void>;
+  onApply: (postId: string, message: string, postOwnerId: string) => Promise<void>;
   onAcceptApplicant: (postId: string, appId: string, applicantUserId: string) => Promise<void>;
-  onDeclineApplicant: (appId: string) => Promise<void>;
+  onDeclineApplicant: (appId: string, applicantUserId: string) => Promise<void>;
   onComplete: (postId: string) => Promise<void>;
   onPostCreated: (post: CommunityPost) => void;
   onPostDeleted: (postId: string) => void;
@@ -62,6 +63,7 @@ export default function CommunityPage({
   const [showComposer, setShowComposer] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
+  const [applicationsModalPostId, setApplicationsModalPostId] = useState<string | null>(null);
 
   const blockedSet = new Set(blockedUserIds);
 
@@ -88,7 +90,6 @@ export default function CommunityPage({
     if (tab === "sitter_help" || tab === "for_you") loadFeed();
   }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Filter out blocked users from feed
   function getFilteredPosts(): CommunityPost[] {
     const visible = posts.filter((p) => !blockedSet.has(p.userId));
     if (tab === "for_you") return visible;
@@ -118,8 +119,7 @@ export default function CommunityPage({
         await communityService.likePost(postId, currentUserId);
         if (post && post.userId !== currentUserId) {
           notificationService.createNotification(
-            post.userId, "post_like", "❤️ Someone liked your post",
-            { postId }
+            post.userId, "post_like", "❤️ Someone liked your post", { postId }
           ).catch(console.error);
         }
       }
@@ -191,7 +191,6 @@ export default function CommunityPage({
     setViewingProfile(null);
     try {
       await onBlockUser(userId);
-      // Remove their posts from the local feed immediately
       setPosts((prev) => prev.filter((p) => p.userId !== userId));
       showToast("success", "User blocked.");
     } catch (err) {
@@ -200,7 +199,7 @@ export default function CommunityPage({
     }
   }
 
-  // Lookup maps
+  // Lookup maps for applications
   const appsByPost = new Map<string, PostApplication[]>();
   postApplications.forEach((a) => {
     const list = appsByPost.get(a.postId) ?? [];
@@ -208,6 +207,12 @@ export default function CommunityPage({
     appsByPost.set(a.postId, list);
   });
   const myAppByPost = new Map(myPostApplications.map((a) => [a.postId, a]));
+
+  // Modal post lookup
+  const modalPost = applicationsModalPostId
+    ? (posts.find((p) => p.id === applicationsModalPostId) ?? myPosts.find((p) => p.id === applicationsModalPostId))
+    : null;
+  const modalApps = applicationsModalPostId ? (appsByPost.get(applicationsModalPostId) ?? []) : [];
 
   const feedPosts = tab === "my_posts" ? myPosts : getFilteredPosts();
   const isProfileTab = tab === "my_profile";
@@ -232,6 +237,28 @@ export default function CommunityPage({
             />
           </div>
         </div>
+      )}
+
+      {/* Applications Modal */}
+      {applicationsModalPostId && (
+        <ApplicationsModal
+          postTitle={modalPost?.title}
+          applications={modalApps}
+          postStatus={modalPost?.status ?? "open"}
+          onAccept={(appId, applicantUserId) => {
+            onAcceptApplicant(applicationsModalPostId, appId, applicantUserId);
+            setApplicationsModalPostId(null);
+          }}
+          onDecline={(appId, applicantUserId) => {
+            onDeclineApplicant(appId, applicantUserId);
+          }}
+          onViewProfile={handleViewProfile}
+          onOpenChat={(userId) => {
+            setApplicationsModalPostId(null);
+            onStartConversation(userId);
+          }}
+          onClose={() => setApplicationsModalPostId(null)}
+        />
       )}
 
       {/* Tab bar */}
@@ -287,10 +314,7 @@ export default function CommunityPage({
           )}
 
           {showComposer && (
-            <PostComposer
-              onSubmit={handleCreatePost}
-              onCancel={() => setShowComposer(false)}
-            />
+            <PostComposer onSubmit={handleCreatePost} onCancel={() => setShowComposer(false)} />
           )}
 
           {loading ? (
@@ -317,12 +341,15 @@ export default function CommunityPage({
                   myApplication={myAppByPost.get(post.id)}
                   onLike={handleLike}
                   onDelete={post.userId === currentUserId ? handleDeletePost : undefined}
-                  onApply={onApply}
-                  onAcceptApplicant={onAcceptApplicant}
-                  onDeclineApplicant={onDeclineApplicant}
+                  onApply={post.userId !== currentUserId ? onApply : undefined}
                   onComplete={handleComplete}
                   onViewProfile={handleViewProfile}
                   onSendMessage={post.userId !== currentUserId ? onStartConversation : undefined}
+                  onViewApplications={
+                    post.userId === currentUserId && post.category === "sitter_help"
+                      ? () => setApplicationsModalPostId(post.id)
+                      : undefined
+                  }
                 />
               ))}
             </div>

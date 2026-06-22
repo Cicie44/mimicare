@@ -271,7 +271,7 @@ export default function ServiceRequestsPage({
             <SitterProfileForm
               initialData={sitterProfile}
               onSubmit={async (profile) => {
-                await onSaveProfile(profile);
+                await onSaveProfile({ ...profile, postCount: 0 });
                 setShowProfileForm(false);
               }}
               onCancel={sitterProfile ? () => setShowProfileForm(false) : undefined}

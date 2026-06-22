@@ -41,13 +41,10 @@ export default function ActivityFeed({
 
   function handleClick(n: AppNotification) {
     if (!n.read) onMarkRead(n.id);
-    // Navigate based on notification type
-    if (n.type === "new_message" && onNavigateToMessages) {
+    if ((n.type === "new_message" || n.type === "comment_reply") && onNavigateToMessages) {
       onNavigateToMessages();
-    } else if (
-      (n.postId || n.type === "new_application" || n.type === "help_application" ||
-       n.type === "post_comment" || n.type === "post_like") && onNavigateToCommunity
-    ) {
+    } else if (onNavigateToCommunity) {
+      // All other notification types link back to community
       onNavigateToCommunity();
     }
   }

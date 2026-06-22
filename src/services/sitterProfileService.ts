@@ -49,6 +49,7 @@ function rowToProfile(row: ProfileRow, stats: Stats): SitterProfile {
     completedVisitsCount: stats.completedVisitsCount,
     averageRating: stats.averageRating,
     reviewCount: stats.reviewCount,
+    postCount: 0,
   };
 }
 

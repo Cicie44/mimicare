@@ -363,11 +363,15 @@ export default function App() {
     }
   }
 
-  async function handleApply(postId: string, message: string): Promise<void> {
+  async function handleApply(postId: string, message: string, postOwnerId: string): Promise<void> {
     try {
       const app = await postApplicationService.applyToPost(postId, message, user!.id);
       setMyPostApplications((prev) => [app, ...prev]);
       showToast("success", "Application sent! 🐾");
+      notificationService.createNotification(
+        postOwnerId, "new_application",
+        "🙋 Someone applied to your Sitter Help post!", { postId }
+      ).catch(console.error);
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to send application.");
@@ -387,11 +391,10 @@ export default function App() {
             : a
         ) as PostApplication[]
       );
-      // Auto-activate conversation with accepted helper
       await messageService.activateConversation(user!.id, applicantUserId);
       await notificationService.createNotification(
-        applicantUserId, "help_application",
-        "✅ Your application was accepted!", postId
+        applicantUserId, "application_accepted",
+        "✅ Your Sitter Help application was accepted!", { postId }
       );
       showToast("success", "Applicant accepted! ✅");
     } catch (err) {
@@ -400,13 +403,17 @@ export default function App() {
     }
   }
 
-  async function handleDeclineApplicant(appId: string): Promise<void> {
+  async function handleDeclineApplicant(appId: string, applicantUserId: string): Promise<void> {
     try {
       await postApplicationService.declinePostApplication(appId);
       setPostApplications((prev) =>
         prev.map((a) => (a.id === appId ? { ...a, status: "declined" as const } : a))
       );
       showToast("success", "Application declined.");
+      notificationService.createNotification(
+        applicantUserId, "application_declined",
+        "Your Sitter Help application was not selected this time."
+      ).catch(console.error);
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to decline application.");
@@ -571,6 +578,8 @@ export default function App() {
             currentUserId={user!.id}
             initialConversationId={initialConversationId}
             onUnreadCountChange={setUnreadMessageCount}
+            onBlock={handleBlockUser}
+            showToast={showToast}
           />
         )}
         {page === "activity" && (

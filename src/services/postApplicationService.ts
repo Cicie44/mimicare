@@ -81,29 +81,28 @@ export async function applyToPost(
 export async function acceptPostApplication(
   postId: string,
   applicationId: string,
-  applicantUserId: string
+  _applicantUserId: string  // used by caller for notification
 ): Promise<void> {
-  const [{ error: e1 }, { error: e2 }, { error: e3 }] = await Promise.all([
-    supabase.from("post_applications").update({ status: "accepted" }).eq("id", applicationId),
-    supabase
-      .from("post_applications")
-      .update({ status: "declined" })
-      .eq("post_id", postId)
-      .neq("id", applicationId),
-    supabase
-      .from("community_posts")
-      .update({ status: "accepted" })
-      .eq("id", postId),
-  ]);
+  // Sequential to avoid partial-update if one step fails
+  const { error: e1 } = await supabase
+    .from("post_applications")
+    .update({ status: "accepted" })
+    .eq("id", applicationId);
   if (e1) throw e1;
+
+  const { error: e2 } = await supabase
+    .from("post_applications")
+    .update({ status: "declined" })
+    .eq("post_id", postId)
+    .eq("status", "pending")
+    .neq("id", applicationId);
   if (e2) throw e2;
+
+  const { error: e3 } = await supabase
+    .from("community_posts")
+    .update({ status: "accepted" })
+    .eq("id", postId);
   if (e3) throw e3;
-  // Store accepted sitter in help details (optional metadata — ignore error)
-  await supabase
-    .from("sitter_help_details")
-    .update({ area: supabase.rpc ? undefined : undefined }) // no-op placeholder
-    .eq("post_id", postId);
-  void applicantUserId; // used by caller for notification
 }
 
 export async function declinePostApplication(applicationId: string): Promise<void> {

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { CommunityPost, PostApplication, UserProfile } from "../../types";
 import CommentSection from "./CommentSection";
-import ApplicationPanel from "./ApplicationPanel";
 
 const CATEGORY_LABEL: Record<string, string> = {
   pet_daily: "🐾 Pet Daily",
@@ -19,16 +18,15 @@ type Props = {
   post: CommunityPost;
   currentUserId: string;
   currentUserProfile?: UserProfile | null;
-  applications?: PostApplication[];      // for owner: apps on this post
-  myApplication?: PostApplication;       // for helper: my app on this post
+  applications?: PostApplication[];      // owner: count badge; helper: own status
+  myApplication?: PostApplication;       // helper: private status
   onLike: (postId: string, liked: boolean) => void;
   onDelete?: (postId: string) => void;
-  onApply?: (postId: string, message: string) => Promise<void>;
-  onAcceptApplicant?: (postId: string, appId: string, applicantUserId: string) => Promise<void>;
-  onDeclineApplicant?: (appId: string) => Promise<void>;
+  onApply?: (postId: string, message: string, postOwnerId: string) => Promise<void>;
   onComplete?: (postId: string) => Promise<void>;
   onViewProfile?: (userId: string) => void;
   onSendMessage?: (userId: string) => void;
+  onViewApplications?: () => void;   // opens modal in parent
 };
 
 export default function PostCard({
@@ -40,11 +38,10 @@ export default function PostCard({
   onLike,
   onDelete,
   onApply,
-  onAcceptApplicant,
-  onDeclineApplicant,
   onComplete,
   onViewProfile,
   onSendMessage,
+  onViewApplications,
 }: Props) {
   const [showComments, setShowComments] = useState(false);
   const [showApply, setShowApply] = useState(false);
@@ -59,7 +56,7 @@ export default function PostCard({
     if (!onApply) return;
     setApplying(true);
     try {
-      await onApply(post.id, applyMsg);
+      await onApply(post.id, applyMsg, post.userId);
       setShowApply(false);
       setApplyMsg("");
     } finally {
@@ -170,11 +167,7 @@ export default function PostCard({
       {/* Image */}
       {post.signedUrl && (
         <div className="mb-3 rounded-2xl overflow-hidden">
-          <img
-            src={post.signedUrl}
-            alt="post"
-            className="w-full max-h-72 object-cover"
-          />
+          <img src={post.signedUrl} alt="post" className="w-full max-h-72 object-cover" />
         </div>
       )}
 
@@ -209,12 +202,34 @@ export default function PostCard({
           <span>{post.commentsCount}</span>
         </button>
 
-        {/* Sitter Help: apply or status */}
-        {isSitterHelp && !isOwner && post.status === "open" && (
-          <>
+        {/* Owner controls — sitter help */}
+        {isSitterHelp && isOwner && (
+          <div className="ml-auto flex items-center gap-2">
+            {onViewApplications && (
+              <button
+                onClick={onViewApplications}
+                className="text-xs px-2.5 py-1 rounded-xl bg-orange-50 text-orange-500 hover:bg-orange-100 transition-colors font-medium"
+              >
+                📋 {applications.length > 0 ? `${applications.length} Application${applications.length > 1 ? "s" : ""}` : "Applications"} · View
+              </button>
+            )}
+            {post.status === "accepted" && onComplete && (
+              <button
+                onClick={() => onComplete(post.id)}
+                className="text-xs px-3 py-1 rounded-xl bg-green-100 text-green-700 hover:bg-green-200 transition-colors font-medium"
+              >
+                Mark Complete ✅
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Helper controls — private apply / status */}
+        {isSitterHelp && !isOwner && (
+          <div className="ml-auto flex items-center gap-2">
             {myApplication ? (
               <span
-                className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${
+                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                   myApplication.status === "accepted"
                     ? "bg-green-50 text-green-600"
                     : myApplication.status === "declined"
@@ -225,34 +240,27 @@ export default function PostCard({
                 {myApplication.status === "accepted"
                   ? "✅ Accepted"
                   : myApplication.status === "declined"
-                  ? "Declined"
+                  ? "Not selected"
                   : "⏳ Applied"}
               </span>
-            ) : (
+            ) : post.status === "open" ? (
               <button
                 onClick={() => setShowApply((v) => !v)}
-                className="ml-auto btn-primary text-xs py-1 px-3"
+                className="btn-primary text-xs py-1 px-3"
               >
                 Apply to Help 🐾
               </button>
-            )}
-          </>
-        )}
-
-        {/* Owner: complete button */}
-        {isSitterHelp && isOwner && post.status === "accepted" && onComplete && (
-          <button
-            onClick={() => onComplete(post.id)}
-            className="ml-auto text-xs px-3 py-1 rounded-xl bg-green-100 text-green-700 hover:bg-green-200 transition-colors font-medium"
-          >
-            Mark Complete ✅
-          </button>
+            ) : null}
+          </div>
         )}
       </div>
 
-      {/* Apply form */}
+      {/* Apply form — private, not visible to post owner */}
       {showApply && (
         <div className="mt-3 pt-3 border-t border-orange-50">
+          <p className="text-xs text-gray-400 mb-2">
+            🔒 Your application is private — only the post owner can see it.
+          </p>
           <textarea
             value={applyMsg}
             onChange={(e) => setApplyMsg(e.target.value)}
@@ -279,19 +287,7 @@ export default function PostCard({
         </div>
       )}
 
-      {/* Applications panel (owner only) */}
-      {isSitterHelp && isOwner && applications.length > 0 && (
-        <ApplicationPanel
-          applications={applications}
-          postStatus={post.status}
-          onAccept={(appId, applicantId) => onAcceptApplicant?.(post.id, appId, applicantId)}
-          onDecline={(appId) => onDeclineApplicant?.(appId)}
-          onViewProfile={onViewProfile}
-          onOpenChat={onSendMessage}
-        />
-      )}
-
-      {/* Comments */}
+      {/* Comments — public discussion only */}
       {showComments && (
         <CommentSection
           postId={post.id}

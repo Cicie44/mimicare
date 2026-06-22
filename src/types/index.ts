@@ -151,6 +151,8 @@ export type NotificationType =
   | "new_review"
   | "post_comment"
   | "post_like"
+  | "comment_reply"
+  | "new_message"
   | "help_application";
 
 export type AppNotification = {
@@ -159,6 +161,7 @@ export type AppNotification = {
   type: NotificationType;
   requestId?: string;
   postId?: string;
+  conversationId?: string;
   message: string;
   read: boolean;
   createdAt: string;
