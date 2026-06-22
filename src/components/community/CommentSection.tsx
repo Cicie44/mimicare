@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import type { PostComment } from "../../types";
 import * as communityService from "../../services/communityService";
+import * as notificationService from "../../services/notificationService";
 
 type Props = {
   postId: string;
+  postAuthorId: string;
   currentUserId: string;
   currentUserDisplayName?: string;
 };
 
-export default function CommentSection({ postId, currentUserId, currentUserDisplayName }: Props) {
+export default function CommentSection({ postId, postAuthorId, currentUserId, currentUserDisplayName }: Props) {
   const [comments, setComments] = useState<PostComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
@@ -24,9 +26,14 @@ export default function CommentSection({ postId, currentUserId, currentUserDispl
     setSubmitting(true);
     try {
       const created = await communityService.addComment(postId, text.trim(), currentUserId);
-      // optimistic display name
       setComments((prev) => [...prev, { ...created, authorName: created.authorName ?? currentUserDisplayName }]);
       setText("");
+      if (currentUserId !== postAuthorId) {
+        notificationService.createNotification(
+          postAuthorId, "post_comment", "💬 Someone commented on your post",
+          { postId }
+        ).catch(console.error);
+      }
     } finally {
       setSubmitting(false);
     }

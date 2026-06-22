@@ -295,6 +295,7 @@ export default function PostCard({
       {showComments && (
         <CommentSection
           postId={post.id}
+          postAuthorId={post.userId}
           currentUserId={currentUserId}
           currentUserDisplayName={currentUserProfile?.displayName}
         />

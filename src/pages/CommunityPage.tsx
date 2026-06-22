@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { CommunityPost, PostApplication, UserProfile, PostCategory } from "../types";
 import type { CreatePostInput } from "../services/communityService";
 import * as communityService from "../services/communityService";
+import * as notificationService from "../services/notificationService";
 import * as userProfileService from "../services/userProfileService";
 import PostCard from "../components/community/PostCard";
 import PostComposer from "../components/community/PostComposer";
@@ -101,6 +102,7 @@ export default function CommunityPage({
   }
 
   async function handleLike(postId: string, liked: boolean) {
+    const post = posts.find((p) => p.id === postId) ?? myPosts.find((p) => p.id === postId);
     const update = (list: CommunityPost[]) =>
       list.map((p) =>
         p.id === postId
@@ -110,8 +112,17 @@ export default function CommunityPage({
     setPosts((prev) => update(prev));
     setMyPosts((prev) => update(prev));
     try {
-      if (liked) await communityService.unlikePost(postId, currentUserId);
-      else await communityService.likePost(postId, currentUserId);
+      if (liked) {
+        await communityService.unlikePost(postId, currentUserId);
+      } else {
+        await communityService.likePost(postId, currentUserId);
+        if (post && post.userId !== currentUserId) {
+          notificationService.createNotification(
+            post.userId, "post_like", "❤️ Someone liked your post",
+            { postId }
+          ).catch(console.error);
+        }
+      }
     } catch (err) {
       console.error(err);
       const revert = (list: CommunityPost[]) =>
