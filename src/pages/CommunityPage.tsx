@@ -219,27 +219,7 @@ export default function CommunityPage({
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Profile overlay */}
-      {viewingProfile && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-sm max-h-[80vh] overflow-y-auto p-4">
-            <button
-              onClick={() => setViewingProfile(null)}
-              className="text-gray-400 hover:text-gray-600 mb-3 text-sm"
-            >
-              ← Back
-            </button>
-            <UserProfileCard
-              profile={viewingProfile}
-              isOwn={viewingProfile.userId === currentUserId}
-              onSendMessage={viewingProfile.userId !== currentUserId ? handleSendMessageFromProfile : undefined}
-              onBlock={viewingProfile.userId !== currentUserId ? handleBlockFromProfile : undefined}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Applications Modal */}
+      {/* Applications Modal — rendered first so profile overlay sits on top */}
       {applicationsModalPostId && (
         <ApplicationsModal
           postTitle={modalPost?.title}
@@ -259,6 +239,26 @@ export default function CommunityPage({
           }}
           onClose={() => setApplicationsModalPostId(null)}
         />
+      )}
+
+      {/* Profile overlay — rendered after ApplicationsModal so it sits on top */}
+      {viewingProfile && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm max-h-[80vh] overflow-y-auto p-4">
+            <button
+              onClick={() => setViewingProfile(null)}
+              className="text-gray-400 hover:text-gray-600 mb-3 text-sm"
+            >
+              ← Back
+            </button>
+            <UserProfileCard
+              profile={viewingProfile}
+              isOwn={viewingProfile.userId === currentUserId}
+              onSendMessage={viewingProfile.userId !== currentUserId ? handleSendMessageFromProfile : undefined}
+              onBlock={viewingProfile.userId !== currentUserId ? handleBlockFromProfile : undefined}
+            />
+          </div>
+        </div>
       )}
 
       {/* Tab bar */}
