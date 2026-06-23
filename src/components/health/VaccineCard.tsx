@@ -21,9 +21,9 @@ function isOverdue(dateStr?: string): boolean {
 
 function vaccineBadge(upcoming: boolean, overdue: boolean, hasDueDate: boolean) {
   if (!hasDueDate) return null;
-  if (overdue) return { label: "⚠️ Overdue", cls: "bg-red-100 text-red-500" };
-  if (upcoming) return { label: "📅 Due soon", cls: "bg-amber-100 text-amber-600" };
-  return { label: "✅ Up to date", cls: "bg-green-100 text-green-600" };
+  if (overdue) return { label: "Overdue", cls: "bg-red-50 text-[#B85C5C]" };
+  if (upcoming) return { label: "Due soon", cls: "bg-parchment-200 text-terracotta-500" };
+  return { label: "Up to date", cls: "bg-sage-50 text-sage-700" };
 }
 
 export default function VaccineCard({ vaccine, onEdit, onDelete }: Props) {
@@ -45,7 +45,7 @@ export default function VaccineCard({ vaccine, onEdit, onDelete }: Props) {
           <p className="text-xs text-gray-400 mt-0.5">Dose #{vaccine.doseNumber}</p>
         </div>
         {badge && (
-          <span className={`text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ${badge.cls}`}>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${badge.cls}`}>
             {badge.label}
           </span>
         )}
@@ -58,26 +58,26 @@ export default function VaccineCard({ vaccine, onEdit, onDelete }: Props) {
         )}
         {vaccine.clinicName && <Row label="Clinic" value={vaccine.clinicName} />}
         {vaccine.notes && (
-          <p className="text-gray-400 text-xs pt-1 border-t border-gray-50">{vaccine.notes}</p>
+          <p className="text-gray-400 text-xs pt-1 border-t border-parchment-200">{vaccine.notes}</p>
         )}
       </div>
 
       {(onEdit || onDelete) && (
-        <div className="mt-3 pt-2 border-t border-gray-50 flex justify-end gap-3">
+        <div className="mt-3 pt-2 border-t border-parchment-200 flex justify-end gap-3">
           {onEdit && (
             <button
               onClick={onEdit}
-              className="text-xs text-gray-300 hover:text-rose-400 font-medium transition-colors"
+              className="text-xs text-gray-400 hover:text-sage-600 font-medium transition-colors"
             >
-              ✏️ Edit
+              Edit
             </button>
           )}
           {onDelete && (
             <button
               onClick={handleDelete}
-              className="text-xs text-gray-300 hover:text-red-400 font-medium transition-colors"
+              className="text-xs text-gray-400 hover:text-[#B85C5C] font-medium transition-colors"
             >
-              × Delete
+              Delete
             </button>
           )}
         </div>
@@ -89,7 +89,7 @@ export default function VaccineCard({ vaccine, onEdit, onDelete }: Props) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
-      <span className="text-gray-500">{label}</span>
+      <span className="text-gray-400">{label}</span>
       <span className="font-medium text-gray-700">{value}</span>
     </div>
   );

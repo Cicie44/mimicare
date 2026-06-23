@@ -23,11 +23,9 @@ export default function GalleryPage({ photos, onAdd, onDelete }: Props) {
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            📸 Photo Gallery
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            {photos.length > 0 ? `${photos.length} photo${photos.length === 1 ? "" : "s"} saved` : "Upload your first photo!"}
+          <h1 className="text-xl font-semibold text-gray-800">Photo Gallery</h1>
+          <p className="text-gray-400 text-sm mt-0.5">
+            {photos.length > 0 ? `${photos.length} photo${photos.length === 1 ? "" : "s"}` : "No photos yet"}
           </p>
         </div>
         {!showForm && (
@@ -46,11 +44,11 @@ export default function GalleryPage({ photos, onAdd, onDelete }: Props) {
 
       {photos.length === 0 && !showForm ? (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-5xl mb-3">📷</p>
-          <p className="font-medium text-gray-500">No photos yet</p>
-          <p className="text-sm mt-1 mb-6">Upload your first photo memory!</p>
+          <p className="text-4xl mb-3">🐾</p>
+          <p className="text-sm font-medium text-gray-500">No photos yet</p>
+          <p className="text-xs mt-1 mb-6">Upload your first photo memory.</p>
           <button onClick={() => setShowForm(true)} className="btn-primary">
-            ＋ Upload Photo
+            Upload Photo
           </button>
         </div>
       ) : (

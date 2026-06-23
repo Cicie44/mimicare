@@ -45,10 +45,8 @@ export default function VaccinesPage({ vaccines, petId, onAdd, onUpdate, onDelet
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            💉 Vaccine Tracker
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">Keeping Mimi protected and healthy</p>
+          <h1 className="text-xl font-semibold text-gray-800">Vaccine Tracker</h1>
+          <p className="text-gray-400 text-sm mt-0.5">Health records and upcoming doses</p>
         </div>
         {!showForm && !editingVaccine && (
           <button onClick={startAdd} className="btn-primary shrink-0">
@@ -71,9 +69,8 @@ export default function VaccinesPage({ vaccines, petId, onAdd, onUpdate, onDelet
 
       {vaccines.length === 0 && !showForm ? (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-5xl mb-3">💉</p>
-          <p className="font-medium text-gray-500">No vaccine records yet</p>
-          <p className="text-sm mt-1">Click "Add Record" to start tracking Mimi's vaccines!</p>
+          <p className="text-sm font-medium text-gray-500">No vaccine records yet</p>
+          <p className="text-xs mt-1">Add a record to start tracking health milestones.</p>
         </div>
       ) : (
         <>
@@ -88,11 +85,11 @@ export default function VaccinesPage({ vaccines, petId, onAdd, onUpdate, onDelet
             ))}
           </div>
 
-          <div className="card mt-8 bg-amber-50 border-amber-100">
-            <h3 className="font-semibold text-amber-700 mb-2">📋 Legend</h3>
-            <div className="space-y-1 text-sm text-amber-600">
-              <p>📅 <strong>Soon</strong> — due within 60 days</p>
-              <p>⚠️ <strong>Overdue</strong> — past the due date</p>
+          <div className="card mt-8">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Legend</p>
+            <div className="space-y-1 text-xs text-gray-500">
+              <p><strong>Due soon</strong> — next dose within 60 days</p>
+              <p><strong>Overdue</strong> — past the scheduled due date</p>
             </div>
           </div>
         </>

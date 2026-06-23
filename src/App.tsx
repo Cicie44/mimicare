@@ -355,7 +355,7 @@ export default function App() {
     try {
       const saved = await userProfileService.upsertProfile(profile, user!.id);
       setUserProfile(saved);
-      showToast("success", "Profile saved! 🐾");
+      showToast("success", "Profile saved.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to save profile.");
@@ -367,10 +367,10 @@ export default function App() {
     try {
       const app = await postApplicationService.applyToPost(postId, message, user!.id);
       setMyPostApplications((prev) => [app, ...prev]);
-      showToast("success", "Application sent! 🐾");
+      showToast("success", "Application sent.");
       notificationService.createNotification(
         postOwnerId, "new_application",
-        "🙋 Someone applied to your Sitter Help post!", { postId }
+        "Someone applied to your Sitter Help post.", { postId }
       ).catch(console.error);
     } catch (err) {
       console.error(err);
@@ -394,9 +394,9 @@ export default function App() {
       await messageService.activateConversation(user!.id, applicantUserId);
       await notificationService.createNotification(
         applicantUserId, "application_accepted",
-        "✅ Your Sitter Help application was accepted!", { postId }
+        "Your Sitter Help application was accepted.", { postId }
       );
-      showToast("success", "Applicant accepted! ✅");
+      showToast("success", "Applicant accepted.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to accept applicant.");
@@ -423,7 +423,7 @@ export default function App() {
   async function handleCompletePost(postId: string): Promise<void> {
     try {
       await communityService.updatePostStatus(postId, "completed");
-      showToast("success", "Marked as completed! 🎉");
+      showToast("success", "Marked as completed.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to update status.");
@@ -481,9 +481,9 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-parchment-100 flex items-center justify-center">
         <div className="text-center text-gray-400">
-          <p className="text-5xl mb-3">🐾</p>
+          <p className="text-3xl mb-3">🐾</p>
           <p className="text-sm font-medium">Loading MimiCare...</p>
         </div>
       </div>
@@ -496,22 +496,20 @@ export default function App() {
     if (loading) {
       return (
         <div className="flex flex-col items-center justify-center py-24 text-gray-400">
-          <p className="text-5xl mb-3">🐱</p>
-          <p className="text-sm font-medium">Loading Mimi's data...</p>
+          <p className="text-sm font-medium">Loading your data...</p>
         </div>
       );
     }
     if (loadError) {
       return (
         <div className="flex flex-col items-center justify-center py-24">
-          <p className="text-5xl mb-3">😿</p>
           <p className="font-medium text-gray-600 text-center max-w-sm mb-1">{loadError}</p>
           <p className="text-xs text-gray-400 text-center max-w-sm mb-5">
-            Make sure your <code className="bg-gray-100 px-1 rounded">.env</code> file has the
+            Make sure your <code className="bg-parchment-200 px-1 rounded">.env</code> file has the
             correct Supabase URL and anon key.
           </p>
           <button onClick={() => loadData(user!.id)} className="btn-primary">
-            🔄 Retry
+            Retry
           </button>
         </div>
       );
@@ -612,13 +610,13 @@ export default function App() {
 
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl shadow-lg text-sm font-medium border ${
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-md text-sm font-medium border ${
             toast.type === "success"
-              ? "bg-green-50 border-green-200 text-green-700"
-              : "bg-red-50 border-red-200 text-red-500"
+              ? "bg-sage-50 border-sage-200 text-sage-700"
+              : "bg-red-50 border-red-100 text-[#B85C5C]"
           }`}
         >
-          <span>{toast.type === "success" ? "✓" : "😿"}</span>
+          <span>{toast.type === "success" ? "✓" : "✕"}</span>
           <span>{toast.message}</span>
         </div>
       )}

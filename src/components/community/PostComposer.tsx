@@ -2,13 +2,19 @@ import { useState, useRef } from "react";
 import type { PostCategory, CompensationType } from "../../types";
 import type { CreatePostInput } from "../../services/communityService";
 
-const CATEGORIES: { value: PostCategory; label: string; emoji: string }[] = [
-  { value: "pet_daily", label: "Pet Daily", emoji: "🐾" },
-  { value: "tips", label: "Tips & Knowledge", emoji: "💡" },
-  { value: "sitter_help", label: "Sitter Help", emoji: "🏡" },
+const CATEGORIES: { value: PostCategory; label: string }[] = [
+  { value: "pet_daily", label: "Pet Daily" },
+  { value: "tips", label: "Tips & Knowledge" },
+  { value: "sitter_help", label: "Sitter Help" },
 ];
 
-const PET_TYPES = ["cat", "dog", "rabbit", "bird", "other"];
+const PET_TYPES: { value: string; label: string }[] = [
+  { value: "cat", label: "Cat" },
+  { value: "dog", label: "Dog" },
+  { value: "rabbit", label: "Rabbit" },
+  { value: "bird", label: "Bird" },
+  { value: "other", label: "Other" },
+];
 const DURATIONS = ["1–2 hours", "Half day", "Full day", "Overnight", "Multiple days"];
 
 type Props = {
@@ -75,8 +81,8 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card border-rose-100 mb-6">
-      <h3 className="font-semibold text-gray-700 mb-4">✍️ New Post</h3>
+    <form onSubmit={handleSubmit} className="card mb-6">
+      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">New Post</h3>
 
       {/* Category selector */}
       <div className="flex gap-2 mb-4">
@@ -85,13 +91,12 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
             key={c.value}
             type="button"
             onClick={() => setCategory(c.value)}
-            className={`flex-1 flex flex-col items-center py-2 rounded-xl border text-xs font-medium transition-all ${
+            className={`flex-1 py-2 rounded-xl border text-xs font-medium transition-all ${
               category === c.value
-                ? "bg-rose-50 border-rose-300 text-rose-600"
-                : "bg-white border-gray-200 text-gray-500 hover:border-rose-200"
+                ? "bg-sage-50 border-sage-400 text-sage-700"
+                : "bg-white border-parchment-300 text-gray-500 hover:border-sage-300 hover:text-sage-600"
             }`}
           >
-            <span className="text-base mb-0.5">{c.emoji}</span>
             {c.label}
           </button>
         ))}
@@ -117,7 +122,7 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
               ? "Describe what kind of help you need..."
               : category === "tips"
               ? "Share your pet care tip or experience..."
-              : "What's your pet up to today? 🐱"
+              : "What's your pet up to today?"
           }
           rows={3}
           maxLength={800}
@@ -126,8 +131,8 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
 
         {/* Sitter Help specific */}
         {category === "sitter_help" && (
-          <div className="bg-orange-50/60 rounded-2xl p-3 space-y-3">
-            <p className="text-xs font-semibold text-orange-500">Help details (public info only)</p>
+          <div className="bg-parchment-100 rounded-xl p-3 space-y-3 border border-parchment-300">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Help details</p>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Date needed</label>
@@ -146,7 +151,7 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
                   className="input text-sm py-1.5"
                 >
                   {PET_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                    <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
                 </select>
               </div>
@@ -186,11 +191,11 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
                     onClick={() => setCompensation(c)}
                     className={`flex-1 py-1.5 rounded-xl text-xs font-medium border transition-all ${
                       compensation === c
-                        ? "bg-rose-100 border-rose-300 text-rose-600"
-                        : "bg-white border-gray-200 text-gray-500 hover:border-rose-200"
+                        ? "bg-sage-50 border-sage-400 text-sage-700"
+                        : "bg-white border-parchment-300 text-gray-500 hover:border-sage-300"
                     }`}
                   >
-                    {c === "volunteer" ? "💛 Volunteer" : c === "open" ? "🤝 Open" : "💵 Fixed"}
+                    {c === "volunteer" ? "Volunteer" : c === "open" ? "Open" : "Fixed"}
                   </button>
                 ))}
               </div>
@@ -205,7 +210,7 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
               )}
             </div>
             <p className="text-[10px] text-gray-400">
-              🔒 Do not include your home address, key codes, or personal phone number in public posts.
+              Do not include your home address, key codes, or personal phone number in public posts.
             </p>
           </div>
         )}
@@ -215,7 +220,7 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
           type="text"
           value={tags}
           onChange={(e) => setTags(e.target.value)}
-          placeholder="Tags (comma separated, e.g. cat, feeding)"
+          placeholder="Tags (comma separated)"
           className="input text-sm"
         />
 
@@ -230,11 +235,11 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
           />
           {imagePreview ? (
             <div className="relative">
-              <img src={imagePreview} alt="preview" className="w-full max-h-48 object-cover rounded-2xl" />
+              <img src={imagePreview} alt="preview" className="w-full max-h-48 object-cover rounded-xl border border-parchment-300" />
               <button
                 type="button"
                 onClick={() => { setImageFile(null); setImagePreview(null); if (fileRef.current) fileRef.current.value = ""; }}
-                className="absolute top-2 right-2 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center text-xs text-gray-500 hover:text-red-400"
+                className="absolute top-2 right-2 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center text-xs text-gray-500 hover:text-[#B85C5C]"
               >
                 ✕
               </button>
@@ -243,15 +248,15 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="w-full py-2.5 border-2 border-dashed border-orange-200 rounded-2xl text-xs text-gray-400 hover:border-rose-300 hover:text-rose-400 transition-colors"
+              className="w-full py-2.5 border border-dashed border-parchment-300 rounded-xl text-xs text-gray-400 hover:border-sage-400 hover:text-sage-600 transition-colors"
             >
-              📷 Add photo (optional)
+              Add photo (optional)
             </button>
           )}
         </div>
       </div>
 
-      {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
+      {error && <p className="text-xs text-[#B85C5C] mt-2">{error}</p>}
 
       <div className="flex gap-2 justify-end mt-4">
         <button type="button" onClick={onCancel} className="btn-secondary text-sm">
@@ -262,7 +267,7 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
           disabled={submitting}
           className="btn-primary text-sm disabled:opacity-60"
         >
-          {submitting ? "Posting..." : "Post 🐾"}
+          {submitting ? "Publishing..." : "Publish"}
         </button>
       </div>
     </form>

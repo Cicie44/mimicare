@@ -41,7 +41,6 @@ export default function MessagesPage({
     loadConversations();
   }, [loadConversations]);
 
-  // Open initial conversation if provided (e.g., from application accept)
   useEffect(() => {
     if (initialConversationId && conversations.length > 0) {
       const found = conversations.find((c) => c.id === initialConversationId);
@@ -51,7 +50,6 @@ export default function MessagesPage({
 
   async function handleSelect(conv: Conversation) {
     setActive(conv);
-    // Optimistically clear unread
     setConversations((prev) =>
       prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c))
     );
@@ -75,10 +73,15 @@ export default function MessagesPage({
     }
   }
 
+  function handleDeclineRequest(convId: string) {
+    setConversations((prev) => prev.filter((c) => c.id !== convId));
+    setActive(null);
+    showToast("success", "Message request declined.");
+  }
+
   async function handleBlock(otherUserId: string) {
     try {
       await onBlock(otherUserId);
-      // Remove blocked conversation from list for the blocker
       setConversations((prev) => prev.filter((c) => c.otherUserId !== otherUserId));
       setActive(null);
       showToast("success", "User blocked.");
@@ -92,12 +95,12 @@ export default function MessagesPage({
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">✉️ Messages</h2>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Messages</h2>
 
-      <div className="bg-white rounded-3xl border border-orange-100 shadow-sm overflow-hidden flex" style={{ height: "calc(100vh - 200px)", minHeight: 480 }}>
+      <div className="bg-parchment-50 rounded-2xl border border-parchment-300 shadow-sm overflow-hidden flex" style={{ height: "calc(100vh - 200px)", minHeight: 480 }}>
         {/* Sidebar */}
-        <div className={`border-r border-orange-100 flex flex-col ${showChat ? "hidden md:flex md:w-72" : "flex-1 md:w-72"}`}>
-          <div className="px-3 pt-3 pb-2 border-b border-orange-50">
+        <div className={`border-r border-parchment-300 flex flex-col ${showChat ? "hidden md:flex md:w-72" : "flex-1 md:w-72"}`}>
+          <div className="px-4 pt-3 pb-2 border-b border-parchment-200">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Inbox</p>
           </div>
           {loading ? (
@@ -121,12 +124,12 @@ export default function MessagesPage({
               conversation={active}
               currentUserId={currentUserId}
               onAcceptRequest={handleAcceptRequest}
+              onDeclineRequest={handleDeclineRequest}
               onBlock={handleBlock}
               onClose={() => setActive(null)}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-              <p className="text-4xl mb-3">💬</p>
               <p className="text-sm font-medium">Select a conversation to start chatting</p>
             </div>
           )}

@@ -44,68 +44,47 @@ export default function CareSummaryDashboard({ vaccines, reminders, diary, photo
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {/* Next Vaccine */}
-      <SummaryTile
-        emoji="💉"
-        label="Next Vaccine"
-        onClick={() => onNavigate("vaccines")}
-        bg="bg-amber-50"
-        border="border-amber-200"
-        labelColor="text-amber-500"
-      >
+      <SummaryTile label="Vaccines" onClick={() => onNavigate("vaccines")}>
         <p className="font-semibold text-gray-800 text-sm leading-snug line-clamp-2">
           {nextVaccine?.name ?? "—"}
         </p>
         {vaccineDays !== null && (
           <span
             className={`text-xs font-medium mt-1 ${
-              vaccineDays < 0
-                ? "text-red-500"
-                : vaccineDays <= 60
-                ? "text-amber-600"
-                : "text-gray-400"
+              vaccineDays < 0 ? "text-[#B85C5C]" : vaccineDays <= 60 ? "text-terracotta-500" : "text-gray-400"
             }`}
           >
             {vaccineDays < 0
-              ? `⚠️ ${Math.abs(vaccineDays)}d overdue`
+              ? `${Math.abs(vaccineDays)}d overdue`
               : vaccineDays === 0
-              ? "⚡ Due today!"
+              ? "Due today"
               : `In ${vaccineDays} days`}
           </span>
         )}
       </SummaryTile>
 
       {/* Reminders */}
-      <SummaryTile
-        emoji="🔔"
-        label="Reminders"
-        onClick={() => onNavigate("reminders")}
-        bg="bg-rose-50"
-        border="border-rose-200"
-        labelColor="text-rose-400"
-      >
+      <SummaryTile label="Reminders" onClick={() => onNavigate("reminders")}>
         <p className="font-semibold text-gray-800 text-sm">
           {pendingCount} pending
         </p>
         {overdueCount > 0 ? (
-          <span className="text-xs font-medium text-red-500 mt-1">
-            ⚠️ {overdueCount} overdue
+          <span className="text-xs font-medium text-[#B85C5C] mt-1">
+            {overdueCount} overdue
           </span>
         ) : (
-          <span className="text-xs text-gray-400 mt-1">All caught up 🎉</span>
+          <span className="text-xs text-gray-400 mt-1">All caught up</span>
         )}
       </SummaryTile>
 
       {/* Today's Mood */}
-      <SummaryTile
-        emoji={latestEntry ? moodEmoji[latestEntry.mood] : "📖"}
-        label="Latest Mood"
-        onClick={() => onNavigate("diary")}
-        bg="bg-pink-50"
-        border="border-pink-200"
-        labelColor="text-pink-400"
-      >
-        <p className="font-semibold text-gray-800 text-sm capitalize">
-          {latestEntry?.mood ?? "No entry yet"}
+      <SummaryTile label="Latest Mood" onClick={() => onNavigate("diary")}>
+        <p className="font-semibold text-gray-800 text-sm capitalize flex items-center gap-1">
+          {latestEntry ? (
+            <>{moodEmoji[latestEntry.mood]} {latestEntry.mood}</>
+          ) : (
+            "No entry yet"
+          )}
         </p>
         {latestEntry && (
           <span className="text-xs text-gray-400 mt-1">{latestEntry.date}</span>
@@ -113,16 +92,9 @@ export default function CareSummaryDashboard({ vaccines, reminders, diary, photo
       </SummaryTile>
 
       {/* Photo Memories */}
-      <SummaryTile
-        emoji="📸"
-        label="Memories"
-        onClick={() => onNavigate("gallery")}
-        bg="bg-orange-50"
-        border="border-orange-200"
-        labelColor="text-orange-400"
-      >
+      <SummaryTile label="Memories" onClick={() => onNavigate("gallery")}>
         <p className="font-semibold text-gray-800 text-sm">
-          {photoCount} photos
+          {photoCount} {photoCount === 1 ? "photo" : "photos"}
         </p>
         {latestPhotoDate && (
           <span className="text-xs text-gray-400 mt-1">Latest: {latestPhotoDate}</span>
@@ -133,27 +105,18 @@ export default function CareSummaryDashboard({ vaccines, reminders, diary, photo
 }
 
 type TileProps = {
-  emoji: string;
   label: string;
   onClick: () => void;
-  bg: string;
-  border: string;
-  labelColor: string;
   children: ReactNode;
 };
 
-function SummaryTile({ emoji, label, onClick, bg, border, labelColor, children }: TileProps) {
+function SummaryTile({ label, onClick, children }: TileProps) {
   return (
     <button
       onClick={onClick}
-      className={`${bg} border ${border} rounded-2xl p-4 text-left hover:shadow-md active:scale-95 transition-all w-full`}
+      className="bg-parchment-50 border border-parchment-300 rounded-2xl p-4 text-left hover:bg-parchment-100 hover:shadow-sm active:scale-95 transition-all w-full"
     >
-      <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-base">{emoji}</span>
-        <span className={`text-xs font-semibold uppercase tracking-wide ${labelColor}`}>
-          {label}
-        </span>
-      </div>
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">{label}</p>
       <div className="flex flex-col">{children}</div>
     </button>
   );

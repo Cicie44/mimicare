@@ -1,16 +1,16 @@
 import type { AppNotification, NotificationType } from "../../types";
 
 const TYPE_CONFIG: Record<NotificationType, { emoji: string; color: string }> = {
-  new_application:       { emoji: "🙋", color: "bg-orange-50 text-orange-500" },
-  application_accepted:  { emoji: "✅", color: "bg-green-50 text-green-600" },
-  application_declined:  { emoji: "❌", color: "bg-red-50 text-red-400" },
-  visit_completed:       { emoji: "🎉", color: "bg-purple-50 text-purple-500" },
-  new_review:            { emoji: "⭐", color: "bg-yellow-50 text-yellow-600" },
-  post_comment:          { emoji: "💬", color: "bg-blue-50 text-blue-500" },
-  post_like:             { emoji: "❤️", color: "bg-rose-50 text-rose-500" },
-  comment_reply:         { emoji: "↩️", color: "bg-indigo-50 text-indigo-500" },
-  new_message:           { emoji: "✉️", color: "bg-teal-50 text-teal-500" },
-  help_application:      { emoji: "🐾", color: "bg-amber-50 text-amber-600" },
+  new_application:       { emoji: "+",  color: "bg-parchment-200 text-gray-600" },
+  application_accepted:  { emoji: "✓",  color: "bg-green-50 text-green-700" },
+  application_declined:  { emoji: "×",  color: "bg-gray-100 text-gray-500" },
+  visit_completed:       { emoji: "★",  color: "bg-sage-50 text-sage-700" },
+  new_review:            { emoji: "★",  color: "bg-parchment-200 text-terracotta-500" },
+  post_comment:          { emoji: "·",  color: "bg-parchment-100 text-gray-600" },
+  post_like:             { emoji: "♥",  color: "bg-parchment-200 text-terracotta-500" },
+  comment_reply:         { emoji: "↩",  color: "bg-parchment-100 text-gray-600" },
+  new_message:           { emoji: "✉",  color: "bg-sage-50 text-sage-600" },
+  help_application:      { emoji: "+",  color: "bg-parchment-200 text-sage-600" },
 };
 
 function timeAgo(iso: string): string {
@@ -44,19 +44,18 @@ export default function ActivityFeed({
     if ((n.type === "new_message" || n.type === "comment_reply") && onNavigateToMessages) {
       onNavigateToMessages();
     } else if (onNavigateToCommunity) {
-      // All other notification types link back to community
       onNavigateToCommunity();
     }
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">🔔 Activity</h2>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-semibold text-gray-800">Activity</h2>
         {unreadCount > 0 && (
           <button
             onClick={onMarkAllRead}
-            className="text-xs text-rose-400 hover:text-rose-600 transition-colors font-medium"
+            className="text-xs text-sage-600 hover:text-sage-700 transition-colors font-medium"
           >
             Mark all read
           </button>
@@ -65,35 +64,35 @@ export default function ActivityFeed({
 
       {notifications.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-4xl mb-3">🌸</p>
+          <p className="text-4xl mb-3">🐾</p>
           <p className="text-sm font-medium">No activity yet</p>
-          <p className="text-xs mt-1">Post in the community to get started!</p>
+          <p className="text-xs mt-1">Post in the community to get started.</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {notifications.map((n) => {
-            const cfg = TYPE_CONFIG[n.type] ?? { emoji: "📌", color: "bg-gray-50 text-gray-500" };
+            const cfg = TYPE_CONFIG[n.type] ?? { emoji: "·", color: "bg-parchment-200 text-gray-500" };
             return (
               <button
                 key={n.id}
                 onClick={() => handleClick(n)}
-                className={`w-full flex items-start gap-3 p-3 rounded-2xl border transition-all text-left ${
+                className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-all text-left ${
                   n.read
-                    ? "bg-white border-orange-50 hover:bg-orange-50/50"
-                    : "bg-rose-50/40 border-rose-100 hover:bg-rose-50"
+                    ? "bg-parchment-50 border-parchment-200 hover:bg-parchment-100"
+                    : "bg-white border-parchment-300 hover:bg-parchment-50"
                 }`}
               >
-                <span className={`text-lg shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${cfg.color}`}>
+                <span className={`text-sm shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-medium ${cfg.color}`}>
                   {cfg.emoji}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm leading-snug ${n.read ? "text-gray-600" : "text-gray-800 font-medium"}`}>
+                  <p className={`text-sm leading-snug ${n.read ? "text-gray-500" : "text-gray-800 font-medium"}`}>
                     {n.message}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">{timeAgo(n.createdAt)}</p>
                 </div>
                 {!n.read && (
-                  <span className="w-2 h-2 rounded-full bg-rose-400 shrink-0 mt-1.5" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-terracotta-500 shrink-0 mt-2" />
                 )}
               </button>
             );

@@ -21,16 +21,14 @@ export default function PetProfilePage({ pet, onUpdate }: Props) {
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            🐱 Pet Profile
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            {isNew && !showForm ? "Tell us about your pet!" : pet.name ? `Everything about ${pet.name}` : "Create your pet profile"}
+          <h1 className="text-xl font-semibold text-gray-800">Pet Profile</h1>
+          <p className="text-gray-400 text-sm mt-0.5">
+            {pet.name ? `All about ${pet.name}` : "Create your pet profile"}
           </p>
         </div>
         {!showForm && !isNew && (
           <button onClick={() => setShowForm(true)} className="btn-primary shrink-0">
-            ✏️ Edit Profile
+            Edit Profile
           </button>
         )}
       </div>
@@ -44,11 +42,11 @@ export default function PetProfilePage({ pet, onUpdate }: Props) {
           />
         ) : isNew ? (
           <div className="text-center py-16 text-gray-400">
-            <p className="text-5xl mb-3">🐱</p>
-            <p className="font-medium text-gray-500">No pet profile yet</p>
-            <p className="text-sm mt-1 mb-6">Add your pet's info to get started!</p>
+            <p className="text-4xl mb-3">🐾</p>
+            <p className="text-sm font-medium text-gray-500">No pet profile yet</p>
+            <p className="text-xs mt-1 mb-6">Add your pet's info to get started.</p>
             <button onClick={() => setShowForm(true)} className="btn-primary">
-              ＋ Create Profile
+              Create Profile
             </button>
           </div>
         ) : (
@@ -56,7 +54,7 @@ export default function PetProfilePage({ pet, onUpdate }: Props) {
             <PetProfileCard pet={pet} />
             {pet.birthday && (
               <div className="card mt-4">
-                <h3 className="font-semibold text-gray-700 mb-3">🎂 Birthday Info</h3>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Birthday</h3>
                 <div className="text-sm text-gray-600 space-y-1">
                   <p>Birthday: <span className="font-medium">{pet.birthday}</span></p>
                   <p>Age: <span className="font-medium">{pet.ageLabel}</span></p>

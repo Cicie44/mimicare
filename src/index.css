@@ -4,29 +4,29 @@
 
 @layer base {
   body {
-    @apply bg-orange-50 text-gray-800 font-sans;
+    @apply bg-parchment-100 text-gray-800 font-sans;
   }
 }
 
 @layer components {
   .input {
-    @apply w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white text-gray-800
-           placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-200
-           focus:border-rose-300 transition;
+    @apply w-full px-3 py-2 text-sm rounded-xl border border-parchment-300 bg-parchment-50 text-gray-800
+           placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sage-100
+           focus:border-sage-500 transition;
   }
   .btn-primary {
-    @apply px-4 py-2 bg-rose-400 text-white text-sm font-semibold rounded-xl
-           hover:bg-rose-500 active:scale-95 transition-all;
+    @apply px-4 py-2 bg-sage-500 text-white text-sm font-semibold rounded-xl
+           hover:bg-sage-600 active:scale-95 transition-all;
   }
   .btn-secondary {
-    @apply px-4 py-2 bg-gray-100 text-gray-500 text-sm font-semibold rounded-xl
-           hover:bg-gray-200 active:scale-95 transition-all;
+    @apply px-4 py-2 bg-white text-sage-600 text-sm font-semibold rounded-xl border border-parchment-300
+           hover:bg-parchment-100 active:scale-95 transition-all;
   }
 }
 
 @layer utilities {
   .card {
-    @apply bg-white rounded-2xl shadow-sm border border-orange-100 p-5;
+    @apply bg-parchment-50 rounded-2xl shadow-sm border border-parchment-300 p-5;
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;

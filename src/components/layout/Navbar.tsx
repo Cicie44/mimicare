@@ -43,7 +43,7 @@ const navGroups: NavGroup[] = [
   },
   {
     label: "Community",
-    emoji: "🌸",
+    emoji: "🌿",
     pages: [
       { label: "Community", page: "community", emoji: "🐾" },
     ],
@@ -93,25 +93,25 @@ function DropdownGroup({
         onClick={() => setOpen((v) => !v)}
         className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
           isActive
-            ? "bg-rose-100 text-rose-600"
-            : "text-gray-500 hover:bg-orange-50 hover:text-rose-400"
+            ? "bg-sage-100 text-sage-700"
+            : "text-gray-500 hover:bg-parchment-100 hover:text-sage-600"
         }`}
       >
         <span>{group.emoji}</span>
         <span className="hidden sm:inline">{group.label}</span>
-        <span className="text-[10px] opacity-60">▾</span>
+        <span className="text-[10px] opacity-50">▾</span>
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-orange-100 rounded-2xl shadow-lg py-1.5 min-w-[140px] z-50">
+        <div className="absolute top-full left-0 mt-1 bg-parchment-50 border border-parchment-300 rounded-2xl shadow-md py-1.5 min-w-[148px] z-50">
           {group.pages.map(({ label, page, emoji }) => (
             <button
               key={page}
               onClick={() => { onNavigate(page); setOpen(false); }}
               className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors ${
                 currentPage === page
-                  ? "text-rose-500 bg-rose-50"
-                  : "text-gray-600 hover:bg-orange-50 hover:text-rose-400"
+                  ? "text-sage-700 bg-sage-50"
+                  : "text-gray-600 hover:bg-parchment-100 hover:text-sage-600"
               }`}
             >
               <span>{emoji}</span>
@@ -132,13 +132,13 @@ export default function Navbar({
   const unreadNotifCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <nav className="bg-white border-b border-orange-100 sticky top-0 z-50 shadow-sm">
+    <nav className="bg-parchment-50 border-b border-parchment-300 sticky top-0 z-50 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
         <button
           onClick={() => onNavigate("home")}
-          className="flex items-center gap-2 font-bold text-xl text-rose-400 hover:text-rose-500 transition-colors shrink-0"
+          className="flex items-center gap-1.5 font-bold text-xl text-sage-700 hover:text-sage-600 transition-colors shrink-0"
         >
-          <span>🐾</span>
+          <span className="text-base">🐾</span>
           <span>MimiCare</span>
         </button>
 
@@ -149,8 +149,8 @@ export default function Navbar({
               onClick={() => onNavigate(page)}
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
                 currentPage === page
-                  ? "bg-rose-100 text-rose-600"
-                  : "text-gray-500 hover:bg-orange-50 hover:text-rose-400"
+                  ? "bg-sage-100 text-sage-700"
+                  : "text-gray-500 hover:bg-parchment-100 hover:text-sage-600"
               }`}
             >
               <span>{emoji}</span>
@@ -169,37 +169,37 @@ export default function Navbar({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Messages icon */}
+          {/* Messages */}
           <button
             onClick={() => onNavigate("messages")}
-            className={`relative p-2 rounded-xl transition-all ${
+            className={`relative p-2 rounded-xl transition-all text-lg ${
               currentPage === "messages"
-                ? "bg-rose-100 text-rose-500"
-                : "text-gray-400 hover:bg-orange-50 hover:text-rose-400"
+                ? "bg-sage-100 text-sage-700"
+                : "text-gray-400 hover:bg-parchment-100 hover:text-sage-600"
             }`}
             title="Messages"
           >
-            <span className="text-lg">✉️</span>
+            ✉️
             {unreadMessageCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-terracotta-500 text-white text-[10px] font-bold flex items-center justify-center">
                 {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
               </span>
             )}
           </button>
 
-          {/* Activity / bell icon */}
+          {/* Activity */}
           <button
             onClick={() => onNavigate("activity")}
-            className={`relative p-2 rounded-xl transition-all ${
+            className={`relative p-2 rounded-xl transition-all text-lg ${
               currentPage === "activity"
-                ? "bg-rose-100 text-rose-500"
-                : "text-gray-400 hover:bg-orange-50 hover:text-rose-400"
+                ? "bg-sage-100 text-sage-700"
+                : "text-gray-400 hover:bg-parchment-100 hover:text-sage-600"
             }`}
             title="Activity"
           >
-            <span className="text-lg">🔔</span>
+            🔔
             {unreadNotifCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-terracotta-500 text-white text-[10px] font-bold flex items-center justify-center">
                 {unreadNotifCount > 9 ? "9+" : unreadNotifCount}
               </span>
             )}
@@ -214,7 +214,7 @@ export default function Navbar({
               )}
               <button
                 onClick={onLogout}
-                className="text-xs px-3 py-1.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:border-red-200 hover:text-red-400 transition-all"
+                className="text-xs px-3 py-1.5 rounded-xl border border-parchment-300 text-gray-500 hover:bg-red-50 hover:border-red-100 hover:text-[#B85C5C] transition-all"
               >
                 Log Out
               </button>

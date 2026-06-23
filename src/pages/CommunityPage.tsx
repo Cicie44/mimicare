@@ -12,13 +12,13 @@ import SitterProfileForm from "../components/services/SitterProfileForm";
 
 type Tab = "for_you" | "pet_daily" | "tips" | "sitter_help" | "my_posts" | "my_profile";
 
-const TABS: { id: Tab; label: string; emoji: string }[] = [
-  { id: "for_you", label: "For You", emoji: "✨" },
-  { id: "pet_daily", label: "Pet Daily", emoji: "🐾" },
-  { id: "tips", label: "Tips", emoji: "💡" },
-  { id: "sitter_help", label: "Sitter Help", emoji: "🏡" },
-  { id: "my_posts", label: "My Posts", emoji: "📝" },
-  { id: "my_profile", label: "My Profile", emoji: "👤" },
+const TABS: { id: Tab; label: string }[] = [
+  { id: "for_you", label: "For You" },
+  { id: "pet_daily", label: "Pet Daily" },
+  { id: "tips", label: "Tips" },
+  { id: "sitter_help", label: "Sitter Help" },
+  { id: "my_posts", label: "My Posts" },
+  { id: "my_profile", label: "My Profile" },
 ];
 
 type Props = {
@@ -144,7 +144,7 @@ export default function CommunityPage({
     setMyPosts((prev) => [created, ...prev]);
     onPostCreated(created);
     setShowComposer(false);
-    showToast("success", "Post published! 🐾");
+    showToast("success", "Post published.");
   }
 
   async function handleDeletePost(postId: string) {
@@ -244,7 +244,7 @@ export default function CommunityPage({
       {/* Profile overlay — rendered after ApplicationsModal so it sits on top */}
       {viewingProfile && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-sm max-h-[80vh] overflow-y-auto p-4">
+          <div className="bg-parchment-50 rounded-2xl w-full max-w-sm max-h-[80vh] overflow-y-auto p-4 border border-parchment-300 shadow-xl">
             <button
               onClick={() => setViewingProfile(null)}
               className="text-gray-400 hover:text-gray-600 mb-3 text-sm"
@@ -267,14 +267,13 @@ export default function CommunityPage({
           <button
             key={t.id}
             onClick={() => { setTab(t.id); setShowComposer(false); }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
+            className={`px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
               tab === t.id
-                ? "bg-rose-100 text-rose-600"
-                : "text-gray-500 hover:bg-orange-50 hover:text-rose-400"
+                ? "bg-sage-100 text-sage-700"
+                : "text-gray-500 hover:bg-parchment-200 hover:text-sage-600"
             }`}
           >
-            <span>{t.emoji}</span>
-            <span>{t.label}</span>
+            {t.label}
           </button>
         ))}
       </div>
@@ -307,9 +306,9 @@ export default function CommunityPage({
           {!showComposer && (
             <button
               onClick={() => setShowComposer(true)}
-              className="w-full mb-5 py-3 border-2 border-dashed border-rose-200 rounded-2xl text-sm text-gray-400 hover:border-rose-400 hover:text-rose-500 transition-colors font-medium"
+              className="w-full mb-5 py-3 border border-dashed border-parchment-300 rounded-2xl text-sm text-gray-400 hover:border-sage-400 hover:text-sage-600 transition-colors font-medium"
             >
-              ✍️ Share something with the community...
+              Share something with the community...
             </button>
           )}
 
@@ -319,12 +318,11 @@ export default function CommunityPage({
 
           {loading ? (
             <div className="text-center py-16 text-gray-400">
-              <p className="text-4xl mb-3">🐱</p>
               <p className="text-sm">Loading community...</p>
             </div>
           ) : feedPosts.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
-              <p className="text-4xl mb-3">🌸</p>
+              <p className="text-4xl mb-3">🐾</p>
               <p className="text-sm font-medium">
                 {tab === "my_posts" ? "You haven't posted yet." : "No posts here yet — be the first!"}
               </p>

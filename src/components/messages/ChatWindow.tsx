@@ -6,16 +6,18 @@ type Props = {
   conversation: Conversation;
   currentUserId: string;
   onAcceptRequest?: (convId: string) => void;
+  onDeclineRequest?: (convId: string) => void;
   onBlock?: (otherUserId: string) => void;
   onClose?: () => void;
 };
 
-export default function ChatWindow({ conversation, currentUserId, onAcceptRequest, onBlock, onClose }: Props) {
+export default function ChatWindow({ conversation, currentUserId, onAcceptRequest, onDeclineRequest, onBlock, onClose }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [reportNotice, setReportNotice] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const isRequest = conversation.status === "request";
@@ -27,7 +29,6 @@ export default function ChatWindow({ conversation, currentUserId, onAcceptReques
     messageService.fetchMessages(conversation.id).then((msgs) => {
       setMessages(msgs);
       setLoading(false);
-      // Mark as read
       messageService.markMessagesRead(conversation.id, currentUserId).catch(console.error);
     });
   }, [conversation.id, currentUserId]);
@@ -56,13 +57,13 @@ export default function ChatWindow({ conversation, currentUserId, onAcceptReques
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-orange-100 shrink-0">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-parchment-300 shrink-0">
         {onClose && (
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 md:hidden">
             ←
           </button>
         )}
-        <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center font-bold text-rose-400 text-sm shrink-0">
+        <div className="w-8 h-8 rounded-full bg-parchment-200 flex items-center justify-center font-bold text-sage-600 text-sm shrink-0">
           {(conversation.otherUserName ?? "?")[0].toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
@@ -70,7 +71,7 @@ export default function ChatWindow({ conversation, currentUserId, onAcceptReques
             {conversation.otherUserName ?? "User"}
           </p>
           {isRequest && (
-            <p className="text-[10px] text-orange-500">Message Request</p>
+            <p className="text-[10px] text-gray-400">Message Request</p>
           )}
         </div>
         <div className="relative">
@@ -81,29 +82,37 @@ export default function ChatWindow({ conversation, currentUserId, onAcceptReques
             ···
           </button>
           {showActions && (
-            <div className="absolute right-0 top-full mt-1 bg-white border border-orange-100 rounded-xl shadow-lg py-1 min-w-[140px] z-20">
+            <div className="absolute right-0 top-full mt-1 bg-parchment-50 border border-parchment-300 rounded-xl shadow-md py-1 min-w-[140px] z-20">
               {onBlock && (
                 <button
                   onClick={() => { onBlock(conversation.otherUserId); setShowActions(false); }}
-                  className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-50 transition-colors"
+                  className="w-full text-left px-3 py-2 text-sm text-[#B85C5C] hover:bg-red-50 transition-colors"
                 >
-                  🚫 Block User
+                  Block User
                 </button>
               )}
               <button
-                onClick={() => { setShowActions(false); alert("Reporting tools are coming soon."); }}
-                className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                onClick={() => { setReportNotice(true); setShowActions(false); }}
+                className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:bg-parchment-100 transition-colors"
               >
-                ⚑ Report
+                Report
               </button>
             </div>
           )}
         </div>
       </div>
 
+      {/* Report notice */}
+      {reportNotice && (
+        <div className="mx-4 mt-3 bg-parchment-100 border border-parchment-300 rounded-xl px-4 py-2 flex items-center justify-between gap-3">
+          <p className="text-xs text-gray-500">Reporting tools are coming soon.</p>
+          <button onClick={() => setReportNotice(false)} className="text-gray-400 hover:text-gray-600 text-xs shrink-0">✕</button>
+        </div>
+      )}
+
       {/* Message Request Banner */}
       {isRequest && !iAmInitiator && (
-        <div className="mx-4 mt-3 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3 text-sm text-center">
+        <div className="mx-4 mt-3 bg-parchment-100 border border-parchment-300 rounded-xl px-4 py-3 text-sm text-center">
           <p className="text-gray-600 mb-2">
             <strong>{conversation.otherUserName ?? "Someone"}</strong> wants to message you.
           </p>
@@ -115,7 +124,7 @@ export default function ChatWindow({ conversation, currentUserId, onAcceptReques
               Accept
             </button>
             <button
-              onClick={() => onBlock?.(conversation.otherUserId)}
+              onClick={() => onDeclineRequest?.(conversation.id)}
               className="btn-secondary text-xs py-1.5 px-4"
             >
               Decline
@@ -126,7 +135,7 @@ export default function ChatWindow({ conversation, currentUserId, onAcceptReques
 
       {/* Blocked Banner */}
       {isBlocked && (
-        <div className="mx-4 mt-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-sm text-center text-red-500">
+        <div className="mx-4 mt-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-center text-[#B85C5C]">
           You have blocked this user. You cannot send or receive messages.
         </div>
       )}
@@ -137,7 +146,7 @@ export default function ChatWindow({ conversation, currentUserId, onAcceptReques
           <div className="text-center text-gray-400 text-sm py-8">Loading...</div>
         ) : messages.length === 0 ? (
           <div className="text-center text-gray-400 text-sm py-8">
-            Say hello to {conversation.otherUserName ?? "them"} 👋
+            Say hello to {conversation.otherUserName ?? "them"}
           </div>
         ) : (
           messages.map((msg) => {
@@ -147,12 +156,12 @@ export default function ChatWindow({ conversation, currentUserId, onAcceptReques
                 <div
                   className={`max-w-[70%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
                     isMine
-                      ? "bg-rose-400 text-white rounded-br-sm"
-                      : "bg-gray-100 text-gray-800 rounded-bl-sm"
+                      ? "bg-sage-500 text-white rounded-br-sm"
+                      : "bg-parchment-200 text-gray-800 rounded-bl-sm"
                   }`}
                 >
                   <p>{msg.content}</p>
-                  <p className={`text-[10px] mt-0.5 ${isMine ? "text-rose-100" : "text-gray-400"} text-right`}>
+                  <p className={`text-[10px] mt-0.5 ${isMine ? "text-sage-100" : "text-gray-400"} text-right`}>
                     {formatTime(msg.createdAt)}
                     {isMine && msg.readAt && " · Read"}
                   </p>
@@ -166,7 +175,7 @@ export default function ChatWindow({ conversation, currentUserId, onAcceptReques
 
       {/* Input */}
       {!isBlocked && (isRequest ? iAmInitiator : true) && (
-        <form onSubmit={handleSend} className="flex gap-2 px-4 py-3 border-t border-orange-100 shrink-0">
+        <form onSubmit={handleSend} className="flex gap-2 px-4 py-3 border-t border-parchment-300 shrink-0">
           <input
             type="text"
             value={text}

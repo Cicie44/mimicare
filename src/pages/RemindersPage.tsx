@@ -55,10 +55,8 @@ export default function RemindersPage({ reminders, petId, onAdd, onUpdate, onMar
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            🔔 Care Reminders
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">Stay on top of Mimi's care routine</p>
+          <h1 className="text-xl font-semibold text-gray-800">Care Reminders</h1>
+          <p className="text-gray-400 text-sm mt-0.5">Stay on top of care routines</p>
         </div>
         {!showForm && !editingReminder && (
           <button onClick={startAdd} className="btn-primary shrink-0">
@@ -87,16 +85,16 @@ export default function RemindersPage({ reminders, petId, onAdd, onUpdate, onMar
             onClick={() => setFilter(value)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${
               filter === value
-                ? "bg-rose-100 text-rose-600"
-                : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
+                ? "bg-sage-100 text-sage-700"
+                : "bg-white border border-parchment-300 text-gray-500 hover:bg-parchment-100"
             }`}
           >
             {label}
             <span
               className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
                 filter === value
-                  ? "bg-rose-200 text-rose-700"
-                  : "bg-gray-100 text-gray-400"
+                  ? "bg-sage-200 text-sage-700"
+                  : "bg-parchment-200 text-gray-400"
               }`}
             >
               {count}
@@ -108,26 +106,24 @@ export default function RemindersPage({ reminders, petId, onAdd, onUpdate, onMar
       {/* Content */}
       {reminders.length === 0 && !showForm ? (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-5xl mb-3">🔔</p>
-          <p className="font-medium text-gray-500">No reminders yet</p>
-          <p className="text-sm mt-1">Click "Add Reminder" to start tracking Mimi's care!</p>
+          <p className="text-sm font-medium text-gray-500">No reminders yet</p>
+          <p className="text-xs mt-1">Add a reminder to track Mimi's care routine.</p>
         </div>
       ) : filter === "all" ? (
         <>
           {overdue.length > 0 && (
-            <Group title="⚠️ Overdue" reminders={overdue} onMarkDone={onMarkDone} onEdit={startEdit} onDelete={onDelete} />
+            <Group title="Overdue" reminders={overdue} onMarkDone={onMarkDone} onEdit={startEdit} onDelete={onDelete} />
           )}
           {pending.length > 0 && (
-            <Group title="📅 Pending" reminders={pending} onMarkDone={onMarkDone} onEdit={startEdit} onDelete={onDelete} />
+            <Group title="Pending" reminders={pending} onMarkDone={onMarkDone} onEdit={startEdit} onDelete={onDelete} />
           )}
           {done.length > 0 && (
-            <Group title="✅ Done" reminders={done} onMarkDone={onMarkDone} onEdit={startEdit} onDelete={onDelete} />
+            <Group title="Done" reminders={done} onMarkDone={onMarkDone} onEdit={startEdit} onDelete={onDelete} />
           )}
         </>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
-          <p className="text-3xl mb-2">✨</p>
-          <p className="text-sm">No {filter} reminders right now</p>
+          <p className="text-sm">You're all caught up.</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 gap-3">
@@ -161,7 +157,7 @@ function Group({
 }) {
   return (
     <div className="mb-6">
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{title}</h2>
+      <h2 className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{title}</h2>
       <div className="grid sm:grid-cols-2 gap-3">
         {reminders.map((r) => (
           <ReminderCard

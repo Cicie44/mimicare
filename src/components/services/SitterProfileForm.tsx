@@ -66,9 +66,9 @@ export default function SitterProfileForm({ initialData, onSubmit, onCancel }: P
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card border-rose-100">
-      <h3 className="font-semibold text-gray-700 mb-4">
-        {initialData ? "✏️ Edit My Sitter Profile" : "🐾 Create My Sitter Profile"}
+    <form onSubmit={handleSubmit} className="card">
+      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+        {initialData ? "Edit My Profile" : "Create My Profile"}
       </h3>
 
       <div className="space-y-4">
@@ -102,7 +102,7 @@ export default function SitterProfileForm({ initialData, onSubmit, onCancel }: P
 
         <div>
           <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
-            Area / Neighbourhood 📍
+            Area / Neighbourhood
           </label>
           <input
             type="text"
@@ -128,7 +128,7 @@ export default function SitterProfileForm({ initialData, onSubmit, onCancel }: P
                     type="button"
                     onClick={() => toggle(!checked)}
                     className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                      checked ? "bg-rose-400 border-rose-400 text-white" : "border-gray-300"
+                      checked ? "bg-sage-500 border-sage-500 text-white" : "border-parchment-300"
                     }`}
                   >
                     {checked && <span className="text-xs font-bold">✓</span>}
@@ -150,8 +150,8 @@ export default function SitterProfileForm({ initialData, onSubmit, onCancel }: P
                 onClick={() => toggleDay(day)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
                   availableDays.includes(day)
-                    ? "bg-rose-100 border-rose-300 text-rose-600"
-                    : "bg-white border-gray-200 text-gray-500 hover:border-rose-200"
+                    ? "bg-sage-100 border-sage-400 text-sage-700"
+                    : "bg-white border-parchment-300 text-gray-500 hover:border-sage-300"
                 }`}
               >
                 {day}
@@ -172,8 +172,8 @@ export default function SitterProfileForm({ initialData, onSubmit, onCancel }: P
                 onClick={() => toggleService(svc)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
                   preferredServiceTypes.includes(svc)
-                    ? "bg-orange-100 border-orange-300 text-orange-600"
-                    : "bg-white border-gray-200 text-gray-500 hover:border-orange-200"
+                    ? "bg-parchment-200 border-parchment-300 text-gray-700"
+                    : "bg-white border-parchment-300 text-gray-500 hover:border-sage-300"
                 }`}
               >
                 {svc}
@@ -188,7 +188,7 @@ export default function SitterProfileForm({ initialData, onSubmit, onCancel }: P
           Cancel
         </button>
         <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-60">
-          {submitting ? "Saving..." : "Save Profile 🐾"}
+          {submitting ? "Saving..." : "Save Profile"}
         </button>
       </div>
     </form>
