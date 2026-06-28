@@ -26,7 +26,7 @@ export default function ApplicationPanel({
   return (
     <div className="mt-3 pt-3 border-t border-orange-50">
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-        Applications ({applications.length})
+        Offers ({applications.length})
       </p>
       <div className="space-y-2">
         {applications.map((app) => (

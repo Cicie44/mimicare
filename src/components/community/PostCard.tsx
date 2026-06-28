@@ -2,10 +2,24 @@ import { useState } from "react";
 import type { CommunityPost, PostApplication, UserProfile } from "../../types";
 import CommentSection from "./CommentSection";
 
+function formatHelpDate(dateStr: string): string {
+  const due = new Date(dateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86400000);
+  const label = due.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (diffDays < 0) return label;
+  if (diffDays === 0) return `${label} · today`;
+  if (diffDays === 1) return `${label} · tomorrow`;
+  if (diffDays <= 14) return `${label} · in ${diffDays} days`;
+  return label;
+}
+
 const CATEGORY_LABEL: Record<string, string> = {
   pet_daily: "Pet Daily",
   tips: "Tips",
-  sitter_help: "Sitter Help",
+  sitter_help: "Community Care",
 };
 
 const POST_STATUS_LABEL: Record<string, string> = {
@@ -14,10 +28,10 @@ const POST_STATUS_LABEL: Record<string, string> = {
   completed: "Completed",
 };
 
-const COMPENSATION_LABEL: Record<string, string> = {
+const SUPPORT_TYPE_LABEL: Record<string, string> = {
   volunteer: "Volunteer",
-  open: "Open to discuss",
-  fixed: "Fixed amount",
+  open: "Flexible",
+  fixed: "Paid thank-you",
 };
 
 type Props = {
@@ -137,31 +151,32 @@ export default function PostCard({
 
       {/* Sitter Help meta */}
       {isSitterHelp && h && (
-        <div className="flex flex-wrap gap-2 mb-3">
-          {h.requestDate && (
-            <span className="text-xs bg-parchment-200 text-gray-600 px-2 py-0.5 rounded-full">
-              {h.requestDate}
-            </span>
+        <div className="mb-3 bg-parchment-100 border border-parchment-200 rounded-xl px-3 py-2.5">
+          {(h.requestDate || h.area) && (
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mb-1.5 text-xs">
+              {h.requestDate && (
+                <span className="font-medium text-gray-700">{formatHelpDate(h.requestDate)}</span>
+              )}
+              {h.area && <span className="text-gray-500">{h.area}</span>}
+            </div>
           )}
-          {h.area && (
-            <span className="text-xs bg-parchment-200 text-gray-600 px-2 py-0.5 rounded-full">
-              {h.area}
+          <div className="flex flex-wrap gap-1.5">
+            {h.petType && (
+              <span className="bg-parchment-200 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                {h.petType === "cat" ? "Cat" : h.petType === "dog" ? "Dog" :
+                  h.petType.charAt(0).toUpperCase() + h.petType.slice(1)}
+              </span>
+            )}
+            {h.duration && (
+              <span className="bg-parchment-200 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                {h.duration}
+              </span>
+            )}
+            <span className="bg-sage-50 text-sage-700 px-2 py-0.5 rounded-full text-xs font-medium">
+              {SUPPORT_TYPE_LABEL[h.compensation]}
+              {h.compensation === "fixed" && h.compensationNote ? ` · ${h.compensationNote}` : ""}
             </span>
-          )}
-          {h.petType && (
-            <span className="text-xs bg-parchment-200 text-gray-600 px-2 py-0.5 rounded-full">
-              {h.petType === "cat" ? "Cat" : h.petType === "dog" ? "Dog" : h.petType}
-            </span>
-          )}
-          {h.duration && (
-            <span className="text-xs bg-parchment-200 text-gray-600 px-2 py-0.5 rounded-full">
-              {h.duration}
-            </span>
-          )}
-          <span className="text-xs bg-sage-50 text-sage-700 px-2 py-0.5 rounded-full">
-            {COMPENSATION_LABEL[h.compensation]}
-            {h.compensation === "fixed" && h.compensationNote ? ` — ${h.compensationNote}` : ""}
-          </span>
+          </div>
         </div>
       )}
 
@@ -217,8 +232,8 @@ export default function PostCard({
                 className="text-xs px-2.5 py-1 rounded-xl bg-parchment-200 text-gray-600 hover:bg-parchment-300 transition-colors font-medium"
               >
                 {applications.length > 0
-                  ? `${applications.length} Application${applications.length > 1 ? "s" : ""}`
-                  : "Applications"
+                  ? `${applications.length} Offer${applications.length > 1 ? "s" : ""}`
+                  : "Offers"
                 } · View
               </button>
             )}
@@ -250,14 +265,14 @@ export default function PostCard({
                   ? "Accepted"
                   : myApplication.status === "declined"
                   ? "Not selected"
-                  : "Applied"}
+                  : "Offer sent"}
               </span>
             ) : post.status === "open" ? (
               <button
                 onClick={() => setShowApply((v) => !v)}
                 className="btn-primary text-xs py-1 px-3"
               >
-                Apply to Help
+                Offer help
               </button>
             ) : null}
           </div>
@@ -290,7 +305,7 @@ export default function PostCard({
               disabled={applying || !applyMsg.trim()}
               className="btn-primary text-xs py-1 px-3 disabled:opacity-60"
             >
-              {applying ? "Sending..." : "Send Application"}
+              {applying ? "Sending..." : "Send offer"}
             </button>
           </div>
         </div>

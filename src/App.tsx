@@ -367,14 +367,14 @@ export default function App() {
     try {
       const app = await postApplicationService.applyToPost(postId, message, user!.id);
       setMyPostApplications((prev) => [app, ...prev]);
-      showToast("success", "Application sent.");
+      showToast("success", "Offer sent.");
       notificationService.createNotification(
         postOwnerId, "new_application",
-        "Someone applied to your Sitter Help post.", { postId }
+        "Someone offered help on your Community Care request.", { postId }
       ).catch(console.error);
     } catch (err) {
       console.error(err);
-      showToast("error", "Failed to send application.");
+      showToast("error", "Failed to send offer.");
       throw err;
     }
   }
@@ -394,12 +394,12 @@ export default function App() {
       await messageService.activateConversation(user!.id, applicantUserId);
       await notificationService.createNotification(
         applicantUserId, "application_accepted",
-        "Your Sitter Help application was accepted.", { postId }
+        "Your offer was accepted.", { postId }
       );
-      showToast("success", "Applicant accepted.");
+      showToast("success", "Offer accepted.");
     } catch (err) {
       console.error(err);
-      showToast("error", "Failed to accept applicant.");
+      showToast("error", "Failed to accept offer.");
     }
   }
 
@@ -409,14 +409,14 @@ export default function App() {
       setPostApplications((prev) =>
         prev.map((a) => (a.id === appId ? { ...a, status: "declined" as const } : a))
       );
-      showToast("success", "Application declined.");
+      showToast("success", "Offer declined.");
       notificationService.createNotification(
         applicantUserId, "application_declined",
-        "Your Sitter Help application was not selected this time."
+        "Your offer was not selected this time."
       ).catch(console.error);
     } catch (err) {
       console.error(err);
-      showToast("error", "Failed to decline application.");
+      showToast("error", "Failed to decline offer.");
     }
   }
 

@@ -5,7 +5,7 @@ import type { CreatePostInput } from "../../services/communityService";
 const CATEGORIES: { value: PostCategory; label: string }[] = [
   { value: "pet_daily", label: "Pet Daily" },
   { value: "tips", label: "Tips & Knowledge" },
-  { value: "sitter_help", label: "Sitter Help" },
+  { value: "sitter_help", label: "Community Care" },
 ];
 
 const PET_TYPES: { value: string; label: string }[] = [
@@ -119,7 +119,7 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
           onChange={(e) => setContent(e.target.value)}
           placeholder={
             category === "sitter_help"
-              ? "Describe what kind of help you need..."
+              ? "Describe the care support you're looking for..."
               : category === "tips"
               ? "Share your pet care tip or experience..."
               : "What's your pet up to today?"
@@ -182,7 +182,8 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
               </div>
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Compensation</label>
+              <label className="block text-xs text-gray-400 mb-1">Support type</label>
+              <p className="text-[10px] text-gray-400 mb-1.5">Choose how this help will be appreciated.</p>
               <div className="flex gap-2">
                 {(["volunteer", "open", "fixed"] as CompensationType[]).map((c) => (
                   <button
@@ -195,7 +196,7 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
                         : "bg-white border-parchment-300 text-gray-500 hover:border-sage-300"
                     }`}
                   >
-                    {c === "volunteer" ? "Volunteer" : c === "open" ? "Open" : "Fixed"}
+                    {c === "volunteer" ? "Volunteer" : c === "open" ? "Flexible" : "Paid thank-you"}
                   </button>
                 ))}
               </div>
@@ -210,7 +211,7 @@ export default function PostComposer({ onSubmit, onCancel }: Props) {
               )}
             </div>
             <p className="text-[10px] text-gray-400">
-              Do not include your home address, key codes, or personal phone number in public posts.
+              Community Care can be volunteer, paid, flexible, or an exchange of help.
             </p>
           </div>
         )}

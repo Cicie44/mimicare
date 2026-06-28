@@ -9,6 +9,7 @@ import PostComposer from "../components/community/PostComposer";
 import UserProfileCard from "../components/community/UserProfileCard";
 import ApplicationsModal from "../components/community/ApplicationsModal";
 import SitterProfileForm from "../components/services/SitterProfileForm";
+import { mockCommunityPosts, DEMO_POST_IDS, DEMO_PROFILES, DEMO_REVIEWS } from "../data/mockCommunityPosts";
 
 type Tab = "for_you" | "pet_daily" | "tips" | "sitter_help" | "my_posts" | "my_profile";
 
@@ -16,7 +17,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "for_you", label: "For You" },
   { id: "pet_daily", label: "Pet Daily" },
   { id: "tips", label: "Tips" },
-  { id: "sitter_help", label: "Sitter Help" },
+  { id: "sitter_help", label: "Community Care" },
   { id: "my_posts", label: "My Posts" },
   { id: "my_profile", label: "My Profile" },
 ];
@@ -169,6 +170,11 @@ export default function CommunityPage({
   }
 
   async function handleViewProfile(userId: string) {
+    // Show demo profile directly without hitting the backend
+    if (DEMO_PROFILES[userId]) {
+      setViewingProfile(DEMO_PROFILES[userId]);
+      return;
+    }
     try {
       const p = await userProfileService.fetchPublicProfile(userId);
       setViewingProfile(p);
@@ -217,6 +223,19 @@ export default function CommunityPage({
   const feedPosts = tab === "my_posts" ? myPosts : getFilteredPosts();
   const isProfileTab = tab === "my_profile";
 
+  // Demo content: shown when real feed is empty (community tabs only)
+  const demoPosts = (() => {
+    if (tab === "for_you") return mockCommunityPosts;
+    const catMap: Partial<Record<Tab, PostCategory>> = {
+      pet_daily: "pet_daily",
+      tips: "tips",
+      sitter_help: "sitter_help",
+    };
+    const cat = catMap[tab];
+    return cat ? mockCommunityPosts.filter((p) => p.category === cat) : [];
+  })();
+  const showDemo = !loading && tab !== "my_posts" && !isProfileTab && feedPosts.length === 0;
+
   return (
     <div className="max-w-2xl mx-auto">
       {/* Applications Modal — rendered first so profile overlay sits on top */}
@@ -253,6 +272,7 @@ export default function CommunityPage({
             </button>
             <UserProfileCard
               profile={viewingProfile}
+              recentReviews={DEMO_REVIEWS[viewingProfile.userId]}
               isOwn={viewingProfile.userId === currentUserId}
               onSendMessage={viewingProfile.userId !== currentUserId ? handleSendMessageFromProfile : undefined}
               onBlock={viewingProfile.userId !== currentUserId ? handleBlockFromProfile : undefined}
@@ -303,6 +323,11 @@ export default function CommunityPage({
       {/* Feed tabs */}
       {!isProfileTab && (
         <>
+          {/* Ways to help — Community Care tab only */}
+          {tab === "sitter_help" && !showComposer && (
+            <WaysToHelp />
+          )}
+
           {!showComposer && (
             <button
               onClick={() => setShowComposer(true)}
@@ -320,40 +345,93 @@ export default function CommunityPage({
             <div className="text-center py-16 text-gray-400">
               <p className="text-sm">Loading community...</p>
             </div>
-          ) : feedPosts.length === 0 ? (
+          ) : tab === "my_posts" && feedPosts.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <p className="text-4xl mb-3">🐾</p>
-              <p className="text-sm font-medium">
-                {tab === "my_posts" ? "You haven't posted yet." : "No posts here yet — be the first!"}
-              </p>
+              <p className="text-sm font-medium">You haven't posted yet.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {feedPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  currentUserId={currentUserId}
-                  currentUserProfile={userProfile}
-                  applications={appsByPost.get(post.id)}
-                  myApplication={myAppByPost.get(post.id)}
-                  onLike={handleLike}
-                  onDelete={post.userId === currentUserId ? handleDeletePost : undefined}
-                  onApply={post.userId !== currentUserId ? onApply : undefined}
-                  onComplete={handleComplete}
-                  onViewProfile={handleViewProfile}
-                  onSendMessage={post.userId !== currentUserId ? onStartConversation : undefined}
-                  onViewApplications={
-                    post.userId === currentUserId && post.category === "sitter_help"
-                      ? () => setApplicationsModalPostId(post.id)
-                      : undefined
-                  }
-                />
-              ))}
-            </div>
+            <>
+              {showDemo && (
+                <div className="mb-4 bg-parchment-100 border border-parchment-300 rounded-xl px-4 py-2.5 text-center">
+                  <p className="text-xs text-gray-400">
+                    Sample posts — be the first to share something with the community.
+                  </p>
+                </div>
+              )}
+              <div className="space-y-4">
+                {(showDemo ? demoPosts : feedPosts).map((post) => {
+                  const isDemo = DEMO_POST_IDS.has(post.id);
+                  return (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      currentUserId={currentUserId}
+                      currentUserProfile={userProfile}
+                      applications={isDemo ? undefined : appsByPost.get(post.id)}
+                      myApplication={isDemo ? undefined : myAppByPost.get(post.id)}
+                      onLike={isDemo ? () => {} : handleLike}
+                      onDelete={!isDemo && post.userId === currentUserId ? handleDeletePost : undefined}
+                      onApply={!isDemo && post.userId !== currentUserId ? onApply : undefined}
+                      onComplete={!isDemo ? handleComplete : undefined}
+                      onViewProfile={!isDemo || DEMO_PROFILES[post.userId] ? handleViewProfile : undefined}
+                      onSendMessage={!isDemo && post.userId !== currentUserId ? onStartConversation : undefined}
+                      onViewApplications={
+                        !isDemo && post.userId === currentUserId && post.category === "sitter_help"
+                          ? () => setApplicationsModalPostId(post.id)
+                          : undefined
+                      }
+                    />
+                  );
+                })}
+              </div>
+            </>
           )}
         </>
       )}
+    </div>
+  );
+}
+
+const WAYS_TO_HELP = [
+  {
+    title: "Feeding visits",
+    desc: "Drop in to refill food, water, and litter.",
+  },
+  {
+    title: "Lost pet lookout",
+    desc: "Help neighbors keep an eye out locally.",
+  },
+  {
+    title: "Supplies sharing",
+    desc: "Offer spare food, litter, carriers, or blankets.",
+  },
+  {
+    title: "Short-term care",
+    desc: "Support pets during travel, illness, or busy weeks.",
+  },
+];
+
+function WaysToHelp() {
+  return (
+    <div className="mb-5 bg-parchment-50 border border-parchment-300 rounded-2xl p-4">
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-0.5">
+        Ways to help
+      </p>
+      <p className="text-xs text-gray-400 mb-3">
+        Small ways neighbors can support pets and people nearby.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        {WAYS_TO_HELP.map((item) => (
+          <div
+            key={item.title}
+            className="bg-parchment-100 border border-parchment-200 rounded-xl px-3 py-2.5"
+          >
+            <p className="text-xs font-semibold text-gray-700 mb-0.5">{item.title}</p>
+            <p className="text-[11px] text-gray-400 leading-relaxed">{item.desc}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

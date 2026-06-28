@@ -16,20 +16,16 @@ function getBadges(profile: UserProfile): Badge[] {
   if (profile.displayName && profile.bio) {
     badges.push({ label: "Profile Complete", color: "bg-green-50 text-green-700" });
   }
-  if (profile.hasCatExperience) {
-    badges.push({ label: "Cat-Friendly", color: "bg-sage-50 text-sage-700" });
+  if (profile.reviewCount >= 3 && (profile.averageRating ?? 0) >= 4.5) {
+    badges.push({ label: "Top Rated", color: "bg-parchment-200 text-terracotta-500" });
   }
-  if (profile.hasDogExperience) {
-    badges.push({ label: "Dog-Friendly", color: "bg-parchment-200 text-gray-600" });
+  if (profile.completedVisitsCount >= 10) {
+    badges.push({ label: "Repeat Helper", color: "bg-sage-50 text-sage-700" });
+  } else if (profile.completedVisitsCount >= 3) {
+    badges.push({ label: "Experienced Helper", color: "bg-sage-50 text-sage-700" });
   }
   if (profile.postCount >= 3) {
     badges.push({ label: "Community Member", color: "bg-parchment-200 text-gray-600" });
-  }
-  if (profile.completedVisitsCount >= 3) {
-    badges.push({ label: "Experienced Helper", color: "bg-sage-50 text-sage-700" });
-  }
-  if (profile.reviewCount >= 3 && (profile.averageRating ?? 0) >= 4.5) {
-    badges.push({ label: "Top Rated", color: "bg-parchment-200 text-terracotta-500" });
   }
   return badges;
 }
@@ -49,7 +45,7 @@ export default function UserProfileCard({ profile, recentReviews = [], isOwn, on
     <div className="card">
       {/* Header */}
       <div className="flex items-start gap-3 mb-4">
-        <div className="w-12 h-12 rounded-full bg-parchment-200 flex items-center justify-center text-xl font-semibold text-sage-600 shrink-0">
+        <div className="w-14 h-14 rounded-full bg-parchment-200 flex items-center justify-center text-xl font-semibold text-sage-600 shrink-0">
           {profile.displayName[0].toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
@@ -98,9 +94,12 @@ export default function UserProfileCard({ profile, recentReviews = [], isOwn, on
         </div>
       </div>
 
-      {/* Bio */}
+      {/* About */}
       {profile.bio && (
-        <p className="text-sm text-gray-600 leading-relaxed mb-4">{profile.bio}</p>
+        <div className="mb-4">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">About</p>
+          <p className="text-sm text-gray-600 leading-relaxed">{profile.bio}</p>
+        </div>
       )}
 
       {/* Stats */}
@@ -116,6 +115,35 @@ export default function UserProfileCard({ profile, recentReviews = [], isOwn, on
           </div>
         ))}
       </div>
+
+      {/* Pet Experience */}
+      {(profile.hasCatExperience || profile.hasDogExperience) && (
+        <div className="mb-4">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
+            Pet Experience
+          </p>
+          <div className="flex gap-4">
+            {[
+              { label: "Cats", checked: profile.hasCatExperience },
+              { label: "Dogs", checked: profile.hasDogExperience },
+            ].map(({ label, checked }) => (
+              <div
+                key={label}
+                className={`flex items-center gap-1.5 text-xs font-medium ${checked ? "text-sage-700" : "text-gray-300"}`}
+              >
+                <span
+                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold border ${
+                    checked ? "bg-sage-500 border-sage-500 text-white" : "border-parchment-300"
+                  }`}
+                >
+                  {checked ? "✓" : ""}
+                </span>
+                {label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Badges */}
       {badges.length > 0 && (

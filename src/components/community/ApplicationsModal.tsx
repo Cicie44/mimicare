@@ -39,7 +39,7 @@ export default function ApplicationsModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-parchment-200 shrink-0">
           <div>
-            <h3 className="font-semibold text-gray-800">Applications</h3>
+            <h3 className="font-semibold text-gray-800">Offers</h3>
             {postTitle && (
               <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[240px]">{postTitle}</p>
             )}
@@ -55,7 +55,7 @@ export default function ApplicationsModal({
         {/* List */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {applications.length === 0 && (
-            <p className="text-center text-sm text-gray-400 py-8">No applications yet.</p>
+            <p className="text-center text-sm text-gray-400 py-8">No offers yet.</p>
           )}
           {applications.map((app) => (
             <div key={app.id} className="bg-parchment-100 rounded-xl p-3 border border-parchment-300">

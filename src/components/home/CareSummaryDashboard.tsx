@@ -61,6 +61,9 @@ export default function CareSummaryDashboard({ vaccines, reminders, diary, photo
               : `In ${vaccineDays} days`}
           </span>
         )}
+        <span className="text-[10px] text-gray-300 mt-2 leading-snug">
+          Keep health records up to date.
+        </span>
       </SummaryTile>
 
       {/* Reminders */}
@@ -75,6 +78,9 @@ export default function CareSummaryDashboard({ vaccines, reminders, diary, photo
         ) : (
           <span className="text-xs text-gray-400 mt-1">All caught up</span>
         )}
+        <span className="text-[10px] text-gray-300 mt-2 leading-snug">
+          Stay on top of daily care.
+        </span>
       </SummaryTile>
 
       {/* Today's Mood */}
@@ -89,6 +95,9 @@ export default function CareSummaryDashboard({ vaccines, reminders, diary, photo
         {latestEntry && (
           <span className="text-xs text-gray-400 mt-1">{latestEntry.date}</span>
         )}
+        <span className="text-[10px] text-gray-300 mt-2 leading-snug">
+          Latest diary check-in.
+        </span>
       </SummaryTile>
 
       {/* Photo Memories */}
@@ -99,6 +108,9 @@ export default function CareSummaryDashboard({ vaccines, reminders, diary, photo
         {latestPhotoDate && (
           <span className="text-xs text-gray-400 mt-1">Latest: {latestPhotoDate}</span>
         )}
+        <span className="text-[10px] text-gray-300 mt-2 leading-snug">
+          Recent saved moments.
+        </span>
       </SummaryTile>
     </div>
   );

@@ -33,9 +33,9 @@ export default function DiaryCard({ entry, onEdit, onDelete }: Props) {
 
   return (
     <div className="card">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm text-gray-400">{entry.date}</span>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <span className="text-sm text-gray-400 shrink-0">{entry.date}</span>
+        <div className="flex items-center gap-2 min-w-0">
           <span
             className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${moodColor[entry.mood]}`}
           >
@@ -64,19 +64,19 @@ export default function DiaryCard({ entry, onEdit, onDelete }: Props) {
 
       <div className="space-y-2 text-sm">
         {entry.food && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 min-w-0">
             <span className="text-gray-400 w-16 shrink-0 text-xs mt-0.5">Food</span>
-            <span className="text-gray-700">{entry.food}</span>
+            <span className="text-gray-700 min-w-0 break-words [overflow-wrap:anywhere]">{entry.food}</span>
           </div>
         )}
         {entry.activity && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 min-w-0">
             <span className="text-gray-400 w-16 shrink-0 text-xs mt-0.5">Activity</span>
-            <span className="text-gray-700">{entry.activity}</span>
+            <span className="text-gray-700 min-w-0 break-words [overflow-wrap:anywhere]">{entry.activity}</span>
           </div>
         )}
         {entry.notes && (
-          <div className="pt-2 border-t border-parchment-200 text-gray-500 text-xs italic">
+          <div className="pt-2 border-t border-parchment-200 text-gray-500 text-xs italic whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
             {entry.notes}
           </div>
         )}

@@ -192,7 +192,7 @@ export default function ServiceRequestCard({
           >
             <span>🙋</span>
             <span>
-              Applicants ({pendingApplicants.length} pending
+              Helpers ({pendingApplicants.length} pending
               {applications.length > pendingApplicants.length
                 ? `, ${applications.length - pendingApplicants.length} other`
                 : ""})
@@ -202,7 +202,7 @@ export default function ServiceRequestCard({
           {showApplicants && (
             <div className="mt-2 space-y-2">
               {applications.length === 0 ? (
-                <p className="text-xs text-gray-400 italic py-2">No applications yet</p>
+                <p className="text-xs text-gray-400 italic py-2">No offers yet</p>
               ) : (
                 applications.map((app) => (
                   <ApplicationCard

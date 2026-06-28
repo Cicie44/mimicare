@@ -27,7 +27,7 @@ export default function ApplicationForm({ onSubmit, onCancel }: Props) {
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        placeholder="Introduce yourself and explain why you'd be a great sitter for this request..."
+        placeholder="Introduce yourself and explain how you can help..."
         rows={3}
         maxLength={500}
         required
@@ -39,7 +39,7 @@ export default function ApplicationForm({ onSubmit, onCancel }: Props) {
           Cancel
         </button>
         <button type="submit" disabled={submitting || !message.trim()} className="btn-primary text-sm disabled:opacity-60">
-          {submitting ? "Sending..." : "Send Application 🐾"}
+          {submitting ? "Sending..." : "Send offer"}
         </button>
       </div>
     </form>
