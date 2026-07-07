@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import Navbar from "./components/layout/Navbar";
+import BottomNav from "./components/layout/BottomNav";
+import CareSubNav from "./components/layout/CareSubNav";
+import InboxSubNav from "./components/layout/InboxSubNav";
 import Footer from "./components/layout/Footer";
 import AuthPage from "./components/auth/AuthPage";
 import HomePage from "./pages/HomePage";
@@ -603,14 +606,36 @@ export default function App() {
         notifications={notifications}
         unreadMessageCount={unreadMessageCount}
       />
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+      {/* Bottom padding on mobile ensures content is not hidden behind the fixed BottomNav */}
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 pt-8 pb-28 md:pb-8">
+        {/* Care sub-navigation: shown for all Care section pages */}
+        {(["reminders", "vaccines", "diary", "gallery", "meme"] as Page[]).includes(page) && (
+          <CareSubNav currentPage={page} onNavigate={setPage} />
+        )}
+        {/* Inbox sub-navigation: shown for Messages and Activity */}
+        {(["messages", "activity"] as Page[]).includes(page) && (
+          <InboxSubNav currentPage={page} onNavigate={setPage} />
+        )}
         {renderContent()}
       </main>
-      <Footer />
 
+      {/* Footer — hidden on mobile where BottomNav takes over */}
+      <div className="hidden md:block">
+        <Footer />
+      </div>
+
+      {/* Mobile bottom tab bar */}
+      <BottomNav
+        currentPage={page}
+        onNavigate={setPage}
+        notifications={notifications}
+        unreadMessageCount={unreadMessageCount}
+      />
+
+      {/* Toast: clears the bottom nav on mobile */}
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-md text-sm font-medium border ${
+          className={`fixed bottom-28 right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-md text-sm font-medium border ${
             toast.type === "success"
               ? "bg-sage-50 border-sage-200 text-sage-700"
               : "bg-red-50 border-red-100 text-[#B85C5C]"
