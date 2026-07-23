@@ -168,9 +168,7 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          🎨 Meme Studio
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-800">Meme Studio</h1>
         <p className="text-gray-400 text-sm mt-1">
           Pick a photo, describe the vibe, and let AI write the perfect cat caption.
         </p>
@@ -192,7 +190,7 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
           {/* Step 1: Pick a photo */}
           <section className="card">
             <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
-              <span className="w-6 h-6 bg-rose-100 text-rose-500 rounded-full text-xs flex items-center justify-center font-bold">
+              <span className="w-6 h-6 bg-sage-100 text-sage-700 rounded-full text-xs flex items-center justify-center font-bold">
                 1
               </span>
               Pick a photo
@@ -208,8 +206,8 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
                   }}
                   className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all focus:outline-none ${
                     selectedPhoto?.id === photo.id
-                      ? "border-rose-400 shadow-md scale-[1.03]"
-                      : "border-transparent hover:border-rose-200"
+                      ? "border-sage-400 shadow-md scale-[1.03]"
+                      : "border-transparent hover:border-parchment-300"
                   }`}
                   title={photo.caption}
                 >
@@ -220,13 +218,13 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full bg-orange-50 flex items-center justify-center">
+                    <div className="w-full h-full bg-parchment-100 flex items-center justify-center">
                       <span className="text-2xl">📸</span>
                     </div>
                   )}
                   {selectedPhoto?.id === photo.id && (
-                    <div className="absolute inset-0 bg-rose-400/10 flex items-end justify-end p-1">
-                      <span className="w-5 h-5 bg-rose-400 rounded-full text-white text-xs flex items-center justify-center">
+                    <div className="absolute inset-0 bg-sage-400/10 flex items-end justify-end p-1">
+                      <span className="w-5 h-5 bg-sage-500 rounded-full text-white text-xs flex items-center justify-center">
                         ✓
                       </span>
                     </div>
@@ -244,7 +242,7 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
           {/* Step 2: Describe the mood */}
           <section className="card">
             <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
-              <span className="w-6 h-6 bg-rose-100 text-rose-500 rounded-full text-xs flex items-center justify-center font-bold">
+              <span className="w-6 h-6 bg-sage-100 text-sage-700 rounded-full text-xs flex items-center justify-center font-bold">
                 2
               </span>
               Describe the vibe
@@ -275,10 +273,10 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
               </button>
             </div>
             {!selectedPhoto && mood.trim() && (
-              <p className="text-xs text-amber-500 mt-2">← Pick a photo first</p>
+              <p className="text-xs text-terracotta-500 mt-2">← Pick a photo first</p>
             )}
             {generateError && (
-              <p className="text-xs text-red-400 mt-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              <p className="text-xs text-[#B85C5C] mt-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                 😿 {generateError}
               </p>
             )}
@@ -288,7 +286,7 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
           {captions.length > 0 && (
             <section className="card">
               <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
-                <span className="w-6 h-6 bg-rose-100 text-rose-500 rounded-full text-xs flex items-center justify-center font-bold">
+                <span className="w-6 h-6 bg-sage-100 text-sage-700 rounded-full text-xs flex items-center justify-center font-bold">
                   3
                 </span>
                 Pick a caption
@@ -300,8 +298,8 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
                     onClick={() => handleSelectCaption(caption)}
                     className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all ${
                       selectedCaption === caption
-                        ? "border-rose-300 bg-rose-50 text-rose-700 font-medium"
-                        : "border-gray-100 bg-gray-50 text-gray-700 hover:border-rose-200 hover:bg-orange-50"
+                        ? "border-sage-300 bg-sage-50 text-sage-700 font-medium"
+                        : "border-parchment-200 bg-parchment-50 text-gray-700 hover:border-parchment-300 hover:bg-parchment-100"
                     }`}
                   >
                     <span className="mr-2 text-gray-300">{i + 1}.</span>
@@ -320,7 +318,7 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
             <section className="card">
               <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <h2 className="font-semibold text-gray-700 flex items-center gap-1.5">
-                  <span className="w-6 h-6 bg-rose-100 text-rose-500 rounded-full text-xs flex items-center justify-center font-bold">
+                  <span className="w-6 h-6 bg-sage-100 text-sage-700 rounded-full text-xs flex items-center justify-center font-bold">
                     4
                   </span>
                   Preview &amp; Download
@@ -354,8 +352,8 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
               </div>
 
               {canvasError ? (
-                <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-700">
-                  <p className="font-medium mb-1">⚠️ Canvas error</p>
+                <div className="bg-parchment-100 border border-parchment-300 rounded-xl p-4 text-sm text-terracotta-600">
+                  <p className="font-medium mb-1">Canvas error</p>
                   <p className="text-xs">{canvasError}</p>
                 </div>
               ) : (
@@ -366,7 +364,7 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
                     style={{ display: canvasReady ? "block" : "none" }}
                   />
                   {!canvasReady && (
-                    <div className="w-full max-w-md aspect-square rounded-2xl bg-orange-50 flex items-center justify-center">
+                    <div className="w-full max-w-md aspect-square rounded-2xl bg-parchment-100 flex items-center justify-center">
                       <span className="text-gray-300 text-4xl">🖼️</span>
                     </div>
                   )}
@@ -379,7 +377,7 @@ export default function MemeStudioPage({ photos, onNavigateToGallery }: Props) {
                   )}
                   {canvasReady && selectedCaption && (
                     <button onClick={handleDownload} className="btn-primary">
-                      ⬇️ Download Meme PNG
+                      Download Meme PNG
                     </button>
                   )}
                 </div>

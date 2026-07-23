@@ -1,4 +1,6 @@
+import { useState } from "react";
 import type { VaccineRecord } from "../../types";
+import { formatDate } from "../../utils/formatDate";
 
 type Props = {
   vaccine: VaccineRecord;
@@ -30,12 +32,7 @@ export default function VaccineCard({ vaccine, onEdit, onDelete }: Props) {
   const upcoming = isUpcoming(vaccine.nextDueDate);
   const overdue = isOverdue(vaccine.nextDueDate);
   const badge = vaccineBadge(upcoming, overdue, !!vaccine.nextDueDate);
-
-  function handleDelete() {
-    if (window.confirm("Delete this vaccine record? This cannot be undone.")) {
-      onDelete?.();
-    }
-  }
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   return (
     <div className="card">
@@ -52,9 +49,9 @@ export default function VaccineCard({ vaccine, onEdit, onDelete }: Props) {
       </div>
 
       <div className="space-y-1.5 text-sm">
-        <Row label="Date given" value={vaccine.dateGiven} />
+        <Row label="Date given" value={formatDate(vaccine.dateGiven)} />
         {vaccine.nextDueDate && (
-          <Row label="Next due" value={vaccine.nextDueDate} />
+          <Row label="Next due" value={formatDate(vaccine.nextDueDate)} />
         )}
         {vaccine.clinicName && <Row label="Clinic" value={vaccine.clinicName} />}
         {vaccine.notes && (
@@ -63,22 +60,42 @@ export default function VaccineCard({ vaccine, onEdit, onDelete }: Props) {
       </div>
 
       {(onEdit || onDelete) && (
-        <div className="mt-3 pt-2 border-t border-parchment-200 flex justify-end gap-3">
-          {onEdit && (
-            <button
-              onClick={onEdit}
-              className="text-xs text-gray-400 hover:text-sage-600 font-medium transition-colors"
-            >
-              Edit
-            </button>
-          )}
-          {onDelete && (
-            <button
-              onClick={handleDelete}
-              className="text-xs text-gray-400 hover:text-[#B85C5C] font-medium transition-colors"
-            >
-              Delete
-            </button>
+        <div className="mt-3 pt-2 border-t border-parchment-200 flex items-center justify-end gap-3">
+          {confirmingDelete ? (
+            <>
+              <span className="text-xs text-gray-500 font-medium mr-auto">Delete this record?</span>
+              <button
+                onClick={() => setConfirmingDelete(false)}
+                className="text-xs text-gray-400 hover:text-gray-600 font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onDelete}
+                className="text-xs text-[#B85C5C] hover:text-red-700 font-semibold transition-colors"
+              >
+                Delete
+              </button>
+            </>
+          ) : (
+            <>
+              {onEdit && (
+                <button
+                  onClick={onEdit}
+                  className="text-xs text-gray-400 hover:text-sage-600 font-medium transition-colors"
+                >
+                  Edit
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={() => setConfirmingDelete(true)}
+                  className="text-xs text-gray-400 hover:text-[#B85C5C] font-medium transition-colors"
+                >
+                  Delete
+                </button>
+              )}
+            </>
           )}
         </div>
       )}

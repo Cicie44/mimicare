@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { PetPhoto } from "../types";
 import PhotoCard from "../components/gallery/PhotoCard";
 import PhotoUploadForm from "../components/gallery/PhotoUploadForm";
+import { formatDate } from "../utils/formatDate";
 
 type Props = {
   photos: PetPhoto[];
@@ -98,7 +99,7 @@ export default function GalleryPage({ photos, onAdd, onDelete }: Props) {
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-white/50 mt-1.5">{lightbox.date}</p>
+              <p className="text-xs text-white/50 mt-1.5">{formatDate(lightbox.date)}</p>
             </div>
           </div>
         </div>

@@ -11,7 +11,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: "demo-pd-1",
     userId: "demo-user-1",
-    authorName: "CherryTheCatMom",
+    authorName: "Cherry C.",
     category: "pet_daily",
     content:
       "Mochi found the laundry basket this morning. Three attempts to move her failed. I now have no clean shirts. 10/10 would recommend owning a cat.",
@@ -25,7 +25,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: "demo-pd-2",
     userId: "demo-user-2",
-    authorName: "TaipeiPawDad",
+    authorName: "James T.",
     category: "pet_daily",
     content:
       "Luna stared at the empty corner of the ceiling for 10 straight minutes. I checked. Nothing there. She knows something I don't.",
@@ -39,7 +39,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: "demo-pd-3",
     userId: "demo-user-3",
-    authorName: "MapleMomTW",
+    authorName: "Maya L.",
     category: "pet_daily",
     content:
       "After 8 months, Maple finally sat on my lap voluntarily — for 4 whole minutes. I didn't breathe. I didn't move. I told her everything was fine. She left when I exhaled.\n\nProgress.",
@@ -53,7 +53,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: "demo-pd-4",
     userId: "demo-user-4",
-    authorName: "BunnyDaysNight",
+    authorName: "Nora W.",
     category: "pet_daily",
     content:
       "Oreo free-roamed the living room for two hours while I worked. He reorganized my cable situation completely. Also ate part of my notebook. Not sure if I'm mad.",
@@ -69,7 +69,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: "demo-tip-1",
     userId: "demo-user-5",
-    authorName: "VetTechJennifer",
+    authorName: "Jennifer W.",
     category: "tips",
     title: "Getting picky cats to drink more water",
     content:
@@ -84,7 +84,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: "demo-tip-2",
     userId: "demo-user-6",
-    authorName: "SunnyPawsHelen",
+    authorName: "Helen C.",
     category: "tips",
     title: "Signs your indoor cat is actually thriving",
     content:
@@ -99,7 +99,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: "demo-tip-3",
     userId: "demo-user-7",
-    authorName: "DanDogDad",
+    authorName: "Daniel P.",
     category: "tips",
     title: "Managing separation anxiety — what actually helped my Shiba",
     content:
@@ -116,7 +116,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: "demo-sh-1",
     userId: "demo-user-1",
-    authorName: "CherryTheCatMom",
+    authorName: "Cherry C.",
     category: "sitter_help",
     title: "Cat sitter needed — long weekend, Da'an area",
     content:
@@ -139,7 +139,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: "demo-sh-2",
     userId: "demo-user-8",
-    authorName: "WendyInSongshan",
+    authorName: "Wendy S.",
     category: "sitter_help",
     title: "Daily feeding visits this week — cat + rabbit",
     content:
@@ -163,7 +163,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: "demo-sh-3",
     userId: "demo-user-9",
-    authorName: "KenInXinyi",
+    authorName: "Ken H.",
     category: "sitter_help",
     title: "Overnight sitter needed — 5 nights in July",
     content:
@@ -186,7 +186,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: "demo-sh-4",
     userId: "demo-user-3",
-    authorName: "MapleMomTW",
+    authorName: "Maya L.",
     category: "sitter_help",
     title: "Short-notice evening check-in — shy cat, Zhongshan",
     content:

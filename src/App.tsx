@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import Navbar from "./components/layout/Navbar";
+import CareSubNav from "./components/layout/CareSubNav";
+import InboxSubNav from "./components/layout/InboxSubNav";
 import Footer from "./components/layout/Footer";
 import AuthPage from "./components/auth/AuthPage";
 import HomePage from "./pages/HomePage";
@@ -19,6 +21,7 @@ import type {
   AppNotification,
   CommunityPost,
   DiaryEntry,
+  Page,
   Pet,
   PetPhoto,
   PostApplication,
@@ -38,7 +41,6 @@ import * as postApplicationService from "./services/postApplicationService";
 import * as communityService from "./services/communityService";
 import * as messageService from "./services/messageService";
 
-type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "meme" | "community" | "messages" | "activity";
 type Toast = { type: "success" | "error"; message: string };
 
 export default function App() {
@@ -182,7 +184,7 @@ export default function App() {
       );
       const signedUrl = await photoService.createSignedUrl(storagePath);
       setPhotos((prev) => [{ ...created, signedUrl }, ...prev]);
-      showToast("success", "Photo uploaded! 📸");
+      showToast("success", "Photo uploaded.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to upload photo. Please try again.");
@@ -207,7 +209,7 @@ export default function App() {
     try {
       const saved = await petService.upsertPet(updated, user!.id);
       setPet(saved);
-      showToast("success", "Profile updated! 🐾");
+      showToast("success", "Profile updated.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to update profile.");
@@ -225,7 +227,7 @@ export default function App() {
           clinicName: vaccine.clinicName, notes: vaccine.notes }, user!.id
       );
       setVaccines((prev) => [created, ...prev]);
-      showToast("success", "Vaccine record added! 💉");
+      showToast("success", "Vaccine record added.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to save vaccine record.");
@@ -237,7 +239,7 @@ export default function App() {
     try {
       await vaccineService.updateVaccine(vaccine);
       setVaccines((prev) => prev.map((v) => (v.id === vaccine.id ? vaccine : v)));
-      showToast("success", "Vaccine record updated! 💉");
+      showToast("success", "Vaccine record updated.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to update vaccine record.");
@@ -265,7 +267,7 @@ export default function App() {
           food: entry.food, activity: entry.activity, notes: entry.notes }, user!.id
       );
       setDiary((prev) => [created, ...prev]);
-      showToast("success", "Diary entry saved! 🐾");
+      showToast("success", "Diary entry saved.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to save diary entry. Please try again.");
@@ -277,7 +279,7 @@ export default function App() {
     try {
       await diaryService.updateDiaryEntry(entry);
       setDiary((prev) => prev.map((e) => (e.id === entry.id ? entry : e)));
-      showToast("success", "Diary entry updated! 🐾");
+      showToast("success", "Diary entry updated.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to update diary entry.");
@@ -305,7 +307,7 @@ export default function App() {
           dueDate: reminder.dueDate, status: reminder.status, notes: reminder.notes }, user!.id
       );
       setReminders((prev) => [created, ...prev]);
-      showToast("success", "Reminder added! 🔔");
+      showToast("success", "Reminder added.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to save reminder. Please try again.");
@@ -317,7 +319,7 @@ export default function App() {
     try {
       await reminderService.markReminderDone(id);
       setReminders((prev) => prev.map((r) => (r.id === id ? { ...r, status: "done" as const } : r)));
-      showToast("success", "Marked as done! ✅");
+      showToast("success", "Marked as done.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to update reminder.");
@@ -328,7 +330,7 @@ export default function App() {
     try {
       await reminderService.updateReminder(reminder);
       setReminders((prev) => prev.map((r) => (r.id === reminder.id ? reminder : r)));
-      showToast("success", "Reminder updated! 🔔");
+      showToast("success", "Reminder updated.");
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to update reminder.");
@@ -483,7 +485,6 @@ export default function App() {
     return (
       <div className="min-h-screen bg-parchment-100 flex items-center justify-center">
         <div className="text-center text-gray-400">
-          <p className="text-3xl mb-3">🐾</p>
           <p className="text-sm font-medium">Loading MimiCare...</p>
         </div>
       </div>
@@ -604,8 +605,17 @@ export default function App() {
         unreadMessageCount={unreadMessageCount}
       />
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+        {/* Care sub-navigation: shown for all Care section pages */}
+        {(["reminders", "vaccines", "diary", "gallery", "meme"] as Page[]).includes(page) && (
+          <CareSubNav currentPage={page} onNavigate={setPage} />
+        )}
+        {/* Inbox sub-navigation: shown for Messages and Activity */}
+        {(["messages", "activity"] as Page[]).includes(page) && (
+          <InboxSubNav currentPage={page} onNavigate={setPage} />
+        )}
         {renderContent()}
       </main>
+
       <Footer />
 
       {toast && (

@@ -1,16 +1,16 @@
 import type { AppNotification, NotificationType } from "../../types";
 
-const TYPE_CONFIG: Record<NotificationType, { emoji: string; color: string }> = {
-  new_application:       { emoji: "+",  color: "bg-parchment-200 text-gray-600" },
-  application_accepted:  { emoji: "✓",  color: "bg-green-50 text-green-700" },
-  application_declined:  { emoji: "×",  color: "bg-gray-100 text-gray-500" },
-  visit_completed:       { emoji: "★",  color: "bg-sage-50 text-sage-700" },
-  new_review:            { emoji: "★",  color: "bg-parchment-200 text-terracotta-500" },
-  post_comment:          { emoji: "·",  color: "bg-parchment-100 text-gray-600" },
-  post_like:             { emoji: "♥",  color: "bg-parchment-200 text-terracotta-500" },
-  comment_reply:         { emoji: "↩",  color: "bg-parchment-100 text-gray-600" },
-  new_message:           { emoji: "✉",  color: "bg-sage-50 text-sage-600" },
-  help_application:      { emoji: "+",  color: "bg-parchment-200 text-sage-600" },
+const TYPE_CONFIG: Record<NotificationType, { label: string; color: string }> = {
+  new_application:       { label: "OF", color: "bg-parchment-200 text-gray-600" },
+  application_accepted:  { label: "OK", color: "bg-sage-50 text-sage-700" },
+  application_declined:  { label: "NO", color: "bg-gray-100 text-gray-500" },
+  visit_completed:       { label: "RV", color: "bg-sage-50 text-sage-700" },
+  new_review:            { label: "RV", color: "bg-parchment-200 text-terracotta-500" },
+  post_comment:          { label: "CM", color: "bg-parchment-100 text-gray-600" },
+  post_like:             { label: "LK", color: "bg-parchment-200 text-terracotta-500" },
+  comment_reply:         { label: "RP", color: "bg-parchment-100 text-gray-600" },
+  new_message:           { label: "MS", color: "bg-sage-50 text-sage-600" },
+  help_application:      { label: "OF", color: "bg-parchment-200 text-sage-600" },
 };
 
 function timeAgo(iso: string): string {
@@ -71,7 +71,7 @@ export default function ActivityFeed({
       ) : (
         <div className="space-y-1.5">
           {notifications.map((n) => {
-            const cfg = TYPE_CONFIG[n.type] ?? { emoji: "·", color: "bg-parchment-200 text-gray-500" };
+            const cfg = TYPE_CONFIG[n.type] ?? { label: "•", color: "bg-parchment-200 text-gray-500" };
             return (
               <button
                 key={n.id}
@@ -82,8 +82,8 @@ export default function ActivityFeed({
                     : "bg-white border-parchment-300 hover:bg-parchment-50"
                 }`}
               >
-                <span className={`text-sm shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-medium ${cfg.color}`}>
-                  {cfg.emoji}
+                <span className={`text-[10px] tracking-tight shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-bold ${cfg.color}`}>
+                  {cfg.label}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm leading-snug ${n.read ? "text-gray-500" : "text-gray-800 font-medium"}`}>

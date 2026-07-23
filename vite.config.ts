@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 import type { Plugin } from "vite";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
@@ -146,6 +147,61 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
-    plugins: [react(), captionApiPlugin(env.OPENAI_API_KEY ?? "")],
+    plugins: [
+      react(),
+      captionApiPlugin(env.OPENAI_API_KEY ?? ""),
+      VitePWA({
+        registerType: "autoUpdate",
+        // SW is not injected in dev — avoids caching confusion during development
+        devOptions: { enabled: false },
+        includeAssets: ["icons/icon.svg"],
+        manifest: {
+          name: "MimiCare",
+          short_name: "MimiCare",
+          description: "A warm pet care and community care app.",
+          theme_color: "#4A6354",
+          background_color: "#FFFCF7",
+          display: "standalone",
+          orientation: "portrait-primary",
+          start_url: "/",
+          scope: "/",
+          icons: [
+            {
+              src: "icons/icon.svg",
+              sizes: "any",
+              type: "image/svg+xml",
+              purpose: "any",
+            },
+            {
+              src: "icons/icon.svg",
+              sizes: "any",
+              type: "image/svg+xml",
+              purpose: "maskable",
+            },
+          ],
+        },
+        workbox: {
+          // Precache all static build artifacts (JS, CSS, HTML, SVG, fonts)
+          globPatterns: ["**/*.{js,css,html,svg,woff,woff2}"],
+          // SPA navigation fallback: serve cached index.html when offline
+          navigateFallback: "/index.html",
+          // Don't apply navigateFallback to API routes
+          navigateFallbackDenylist: [/^\/api\//],
+          runtimeCaching: [
+            {
+              // Cache Google Fonts for offline use
+              urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com/,
+              handler: "CacheFirst",
+              options: {
+                cacheName: "google-fonts",
+                expiration: { maxAgeSeconds: 60 * 60 * 24 * 365 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            // Supabase API calls are NOT cached — always fetch live data
+          ],
+        },
+      }),
+    ],
   };
 });

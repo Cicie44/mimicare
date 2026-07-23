@@ -1,4 +1,6 @@
+import { useState } from "react";
 import type { Reminder } from "../../types";
+import { formatDate } from "../../utils/formatDate";
 
 type Props = {
   reminder: Reminder;
@@ -20,11 +22,8 @@ const statusLabel: Record<Reminder["status"], string> = {
 };
 
 export default function ReminderCard({ reminder, onMarkDone, onEdit, onDelete }: Props) {
-  function handleDelete() {
-    if (window.confirm("Delete this reminder? This cannot be undone.")) {
-      onDelete?.();
-    }
-  }
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
   return (
     <div className="card">
       <div className="flex items-start justify-between gap-2">
@@ -40,7 +39,7 @@ export default function ReminderCard({ reminder, onMarkDone, onEdit, onDelete }:
       </div>
 
       <div className="mt-3 text-sm text-gray-400">
-        Due: <span className="font-medium text-gray-700">{reminder.dueDate}</span>
+        Due: <span className="font-medium text-gray-700">{formatDate(reminder.dueDate)}</span>
       </div>
 
       {reminder.notes && (
@@ -51,34 +50,56 @@ export default function ReminderCard({ reminder, onMarkDone, onEdit, onDelete }:
 
       {(onMarkDone || onEdit || onDelete) && (
         <div className="mt-3 pt-2 border-t border-parchment-200 flex items-center justify-between">
-          <div>
-            {reminder.status !== "done" && onMarkDone && (
-              <button
-                onClick={onMarkDone}
-                className="text-xs text-sage-600 hover:text-sage-700 font-semibold flex items-center gap-1 transition-colors"
-              >
-                ✓ Mark as done
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            {onEdit && (
-              <button
-                onClick={onEdit}
-                className="text-xs text-gray-400 hover:text-sage-600 font-medium transition-colors"
-              >
-                Edit
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={handleDelete}
-                className="text-xs text-gray-400 hover:text-[#B85C5C] font-medium transition-colors"
-              >
-                Delete
-              </button>
-            )}
-          </div>
+          {confirmingDelete ? (
+            <>
+              <span className="text-xs text-gray-500 font-medium">Delete this record?</span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setConfirmingDelete(false)}
+                  className="text-xs text-gray-400 hover:text-gray-600 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={onDelete}
+                  className="text-xs text-[#B85C5C] hover:text-red-700 font-semibold transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                {reminder.status !== "done" && onMarkDone && (
+                  <button
+                    onClick={onMarkDone}
+                    className="text-xs text-sage-600 hover:text-sage-700 font-semibold flex items-center gap-1 transition-colors"
+                  >
+                    ✓ Mark as done
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {onEdit && (
+                  <button
+                    onClick={onEdit}
+                    className="text-xs text-gray-400 hover:text-sage-600 font-medium transition-colors"
+                  >
+                    Edit
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={() => setConfirmingDelete(true)}
+                    className="text-xs text-gray-400 hover:text-[#B85C5C] font-medium transition-colors"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

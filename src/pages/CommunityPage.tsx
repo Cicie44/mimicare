@@ -282,7 +282,7 @@ export default function CommunityPage({
       )}
 
       {/* Tab bar */}
-      <div className="flex gap-1 overflow-x-auto pb-1 mb-5 -mx-1 px-1">
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-5 -mx-1 px-1">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -290,7 +290,7 @@ export default function CommunityPage({
             className={`px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
               tab === t.id
                 ? "bg-sage-100 text-sage-700"
-                : "text-gray-500 hover:bg-parchment-200 hover:text-sage-600"
+                : "text-gray-500 bg-parchment-50 border border-parchment-300 hover:bg-parchment-100 hover:text-sage-600"
             }`}
           >
             {t.label}

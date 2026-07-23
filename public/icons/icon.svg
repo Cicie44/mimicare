@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Rounded square background in sage green -->
+  <rect width="512" height="512" rx="96" fill="#4A6354"/>
+  <!-- Cat paw: 4 toe pads in an arc -->
+  <ellipse cx="156" cy="234" rx="46" ry="54" fill="#FFFCF7"/>
+  <ellipse cx="207" cy="184" rx="46" ry="54" fill="#FFFCF7"/>
+  <ellipse cx="305" cy="184" rx="46" ry="54" fill="#FFFCF7"/>
+  <ellipse cx="356" cy="234" rx="46" ry="54" fill="#FFFCF7"/>
+  <!-- Main central pad -->
+  <ellipse cx="256" cy="334" rx="92" ry="76" fill="#FFFCF7"/>
+</svg>
