@@ -1,4 +1,5 @@
 import type { DiaryEntry } from "../../types";
+import { formatDate } from "../../utils/formatDate";
 
 type Props = {
   entry: DiaryEntry;
@@ -34,7 +35,7 @@ export default function DiaryCard({ entry, onEdit, onDelete }: Props) {
   return (
     <div className="card">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <span className="text-sm text-gray-400 shrink-0">{entry.date}</span>
+        <span className="text-sm text-gray-400 shrink-0">{formatDate(entry.date)}</span>
         <div className="flex items-center gap-2 min-w-0">
           <span
             className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${moodColor[entry.mood]}`}

@@ -1,4 +1,5 @@
 import type { PetPhoto } from "../../types";
+import { formatDate } from "../../utils/formatDate";
 
 type Props = {
   photo: PetPhoto;
@@ -54,7 +55,7 @@ export default function PhotoCard({ photo, onDelete, onClick }: Props) {
               </span>
             ))}
           </div>
-          <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">{photo.date}</span>
+          <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">{formatDate(photo.date)}</span>
         </div>
       </div>
     </div>

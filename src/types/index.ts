@@ -257,3 +257,17 @@ export type Message = {
   readAt?: string;
   createdAt: string;
 };
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+
+export type Page =
+  | "home"
+  | "profile"
+  | "vaccines"
+  | "reminders"
+  | "gallery"
+  | "diary"
+  | "meme"
+  | "community"
+  | "messages"
+  | "activity";

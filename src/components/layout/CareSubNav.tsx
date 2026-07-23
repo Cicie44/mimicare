@@ -1,14 +1,4 @@
-type Page =
-  | "home"
-  | "profile"
-  | "vaccines"
-  | "reminders"
-  | "gallery"
-  | "diary"
-  | "meme"
-  | "community"
-  | "messages"
-  | "activity";
+import type { Page } from "../../types";
 
 type Props = {
   currentPage: Page;
@@ -20,7 +10,7 @@ const CARE_TABS: { label: string; page: Page }[] = [
   { label: "Vaccines",  page: "vaccines"  },
   { label: "Diary",     page: "diary"     },
   { label: "Photos",    page: "gallery"   },
-  { label: "Meme",      page: "meme"      },
+  { label: "Meme Studio", page: "meme"    },
 ];
 
 export default function CareSubNav({ currentPage, onNavigate }: Props) {

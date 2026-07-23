@@ -1,17 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import type { AppNotification } from "../../types";
-
-type Page =
-  | "home"
-  | "profile"
-  | "vaccines"
-  | "reminders"
-  | "gallery"
-  | "diary"
-  | "meme"
-  | "community"
-  | "messages"
-  | "activity";
+import type { AppNotification, Page } from "../../types";
 
 type Props = {
   currentPage: Page;
@@ -33,7 +21,7 @@ const SECTIONS: Section[] = [
   { label: "Care Records", pages: ["reminders","vaccines","diary","gallery","meme"], defaultPage: "reminders" },
   { label: "Community",    pages: ["community"],                                     defaultPage: "community" },
   { label: "Inbox",        pages: ["messages","activity"],                           defaultPage: "messages"  },
-  { label: "Mimi",         pages: ["profile"],                                       defaultPage: "profile"   },
+  { label: "Profile",      pages: ["profile"],                                       defaultPage: "profile"   },
 ];
 
 export default function Navbar({
@@ -127,7 +115,7 @@ export default function Navbar({
 
         {/* Mobile: inbox badge + hamburger */}
         <div className="flex md:hidden items-center gap-2 shrink-0">
-          {unreadInboxCount > 0 && (
+          {!menuOpen && unreadInboxCount > 0 && (
             <span className="min-w-[20px] h-5 px-1 rounded-full bg-terracotta-500 text-white text-[10px] font-bold flex items-center justify-center pointer-events-none">
               {unreadInboxCount > 9 ? "9+" : unreadInboxCount}
             </span>
@@ -136,7 +124,7 @@ export default function Navbar({
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
-            className={`p-2 rounded-xl transition-all ${
+            className={`p-2.5 rounded-xl transition-all ${
               menuOpen
                 ? "bg-sage-100 text-sage-700"
                 : "text-gray-500 hover:bg-parchment-100 hover:text-sage-600"

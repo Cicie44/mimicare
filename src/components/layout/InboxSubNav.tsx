@@ -1,14 +1,4 @@
-type Page =
-  | "home"
-  | "profile"
-  | "vaccines"
-  | "reminders"
-  | "gallery"
-  | "diary"
-  | "meme"
-  | "community"
-  | "messages"
-  | "activity";
+import type { Page } from "../../types";
 
 type Props = {
   currentPage: Page;

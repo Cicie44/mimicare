@@ -53,7 +53,7 @@ export default function DiaryPage({ entries, petId, onAdd, onUpdate, onDelete }:
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-800">Mimi's Diary</h1>
+          <h1 className="text-xl font-semibold text-gray-800">Care Diary</h1>
           <p className="text-gray-400 text-sm mt-0.5">Daily notes and mood tracking</p>
         </div>
         {!showForm && !editingEntry && (
@@ -93,7 +93,10 @@ export default function DiaryPage({ entries, petId, onAdd, onUpdate, onDelete }:
       {entries.length === 0 && !showForm ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-sm font-medium text-gray-500">No entries yet</p>
-          <p className="text-xs mt-1">Start logging Mimi's daily moments.</p>
+          <p className="text-xs mt-1 mb-4">Start logging daily moments.</p>
+          <button onClick={startAdd} className="btn-primary">
+            Add entry
+          </button>
         </div>
       ) : (
         <div className="space-y-4 max-w-xl">

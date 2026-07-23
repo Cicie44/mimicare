@@ -1,6 +1,5 @@
-import type { Pet, VaccineRecord, Reminder, DiaryEntry, PetPhoto } from "../types";
-
-type Page = "home" | "profile" | "vaccines" | "reminders" | "gallery" | "diary" | "community";
+import type { Pet, VaccineRecord, Reminder, DiaryEntry, PetPhoto, Page } from "../types";
+import { formatDate } from "../utils/formatDate";
 
 type Props = {
   pet: Pet;
@@ -101,7 +100,7 @@ export default function HomePage({ pet, vaccines, reminders, diary, photos, onNa
           )}
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-gray-800 leading-snug">
-              Today with {pet.name}
+              {pet.name ? `${pet.name}'s Care Dashboard` : "Care Dashboard"}
             </h1>
             <p
               className={`text-sm mt-0.5 ${
@@ -149,7 +148,7 @@ export default function HomePage({ pet, vaccines, reminders, diary, photos, onNa
               >
                 <span className="text-sm text-gray-700 font-medium truncate">{r.title}</span>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-gray-400">{r.dueDate}</span>
+                  <span className="text-xs text-gray-400">{formatDate(r.dueDate)}</span>
                   <span
                     className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
                       r.status === "overdue"
@@ -176,7 +175,7 @@ export default function HomePage({ pet, vaccines, reminders, diary, photos, onNa
                   <span className="text-sm text-gray-700 font-medium truncate">{v.name}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-gray-400">{v.nextDueDate}</span>
+                  <span className="text-xs text-gray-400">{formatDate(v.nextDueDate!)}</span>
                   <span
                     className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
                       v.daysLeft < 0
@@ -208,7 +207,7 @@ export default function HomePage({ pet, vaccines, reminders, diary, photos, onNa
           />
           <div className="card">
             <div className="flex items-center justify-between gap-2 mb-3">
-              <span className="text-xs text-gray-400">{latestDiary.date}</span>
+              <span className="text-xs text-gray-400">{formatDate(latestDiary.date)}</span>
               <span
                 className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
                   moodColor[latestDiary.mood]

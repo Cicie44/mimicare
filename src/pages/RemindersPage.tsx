@@ -107,7 +107,10 @@ export default function RemindersPage({ reminders, petId, onAdd, onUpdate, onMar
       {reminders.length === 0 && !showForm ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-sm font-medium text-gray-500">No reminders yet</p>
-          <p className="text-xs mt-1">Add a reminder to track Mimi's care routine.</p>
+          <p className="text-xs mt-1 mb-4">Add a reminder to track your pet's care routine.</p>
+          <button onClick={startAdd} className="btn-primary">
+            Add reminder
+          </button>
         </div>
       ) : filter === "all" ? (
         <>
